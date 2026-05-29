@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>scriptdx — Terminal toolkit for CLI output</title>
+    <meta
+      name="description"
+      content="scriptdx is a lightweight terminal toolkit for colorful logs, loading effects, tables, and developer-friendly CLI output."
+    />
+    <meta
+      name="keywords"
+      content="scriptdx, terminal, cli, logging, ansi, spinner, typescript, npm"
+    />
+    <meta name="author" content="scriptdx" />
+    <meta name="theme-color" content="#000000" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="./public/icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="./public/icons/favicon-16x16.png"
+    />
+    <link rel="icon" type="image/png" href="./public/icons/favicon.png" />
+    <link rel="apple-touch-icon" href="./public/icons/apple-touch-icon.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="./public/icons/android-chrome-192x192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="./public/icons/android-chrome-512x512.png"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="scriptdx — Terminal toolkit for CLI output"
+    />
+    <meta
+      property="og:description"
+      content="A lightweight terminal toolkit for colorful logs, loading effects, and developer-friendly CLI output."
+    />
+    <meta property="og:image" content="./public/icons/thumbnail.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="scriptdx — Terminal toolkit for CLI output"
+    />
+    <meta
+      name="twitter:description"
+      content="A lightweight terminal toolkit for colorful logs, loading effects, and developer-friendly CLI output."
+    />
+    <meta name="twitter:image" content="./public/icons/thumbnail.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./global.css" />
+  </head>
+  <body>
+    <div class="terminal-layer" aria-hidden="true">
+      <div class="terminal-bg terminal-a">
+        <div class="terminal-lines"></div>
+      </div>
+      <div class="terminal-bg terminal-b">
+        <div class="terminal-lines"></div>
+      </div>
+      <div class="terminal-bg terminal-c">
+        <div class="terminal-lines"></div>
+      </div>
+      <div class="terminal-bg terminal-d">
+        <div class="terminal-lines"></div>
+      </div>
+    </div>
+
+    <main class="hero">
+      <div class="hero-header">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="hero-tab">terminal</span>
+      </div>
+      <div class="hero-body">
+        <p class="prompt">$ package info</p>
+        <h1 class="title">scriptdx</h1>
+        <p class="description">
+          A terminal toolkit for colorful logs, loading effects, and
+          developer-friendly CLI output.
+        </p>
+        <a
+          class="npm-button"
+          href="https://www.npmjs.com/package/scriptdx"
+          target="_blank"
+          rel="noreferrer"
+        >
+          npm install scriptdx
+        </a>
+      </div>
+    </main>
+
+    <script>
+      const lineContainers = Array.from(
+        document.querySelectorAll(".terminal-lines"),
+      );
+      const templates = [
+        { html: '<span class="term-cmd">$ npm run tutorial</span>' },
+        { html: '<span class="term-dim">=== Log Functions ===</span>' },
+        {
+          html: '<span class="term-info">[INFO]</span> Starting simulated process...',
+        },
+        { html: '<span class="term-warning">[WARNING]</span> Low disk space' },
+        {
+          html: '<span class="term-error">[ERROR]</span> Failed to connect to database',
+        },
+        {
+          html: '<span class="term-success">[SUCCESS]</span> Process completed',
+        },
+        { html: '<span class="term-success">✔</span> Alias: success' },
+        { html: '<span class="term-info">i</span> Alias: info' },
+        { html: '<span class="term-warning">⚠</span> Alias: warning' },
+        { html: '<span class="term-cyan">Cyan text</span> from color object' },
+
+        {
+          html: '<span class="term-topic">Emulator | Host:Port | View in Emulator UI</span>',
+        },
+        {
+          html: '<span class="term-dim">Functions | localhost:5001 | http://localhost:4000/functions</span>',
+        },
+        {
+          html: '<span class="term-success">✔</span> 1. Waiting before creating a resource',
+        },
+        {
+          html: '<span class="term-success">✔</span> 2. Creating the resource',
+        },
+        {
+          html: '<span class="term-success">✔</span> 3. Deleting the resource',
+        },
+
+        { html: '<span class="term-success">✔</span> git installed' },
+        { html: '<span class="term-success">✔</span> node installed' },
+        { html: '<span class="term-error">✖</span> docker not found' },
+        { html: '<span class="term-success">ok</span>: git, node, npm' },
+        { html: '<span class="term-error">fail</span>: docker' },
+        {
+          html: '<span class="term-dim">isLinux(): false | isWindows(): true</span>',
+        },
+
+        {
+          html: '<span class="term-topic">Selected: View Loading Functions</span>',
+        },
+        {
+          html: '<span class="term-cmd">$ npm run build && npm run test</span>',
+        },
+        { html: '<span class="term-dim">> scriptdx@1.0.0 build</span>' },
+        { html: '<span class="term-dim">> tsup</span>' },
+        {
+          html: '<span class="term-success">[SUCCESS]</span> Typecheck passed',
+        },
+        { html: '<span class="term-success">[SUCCESS]</span> Tests passed' },
+        { html: '<span class="term-debug">●</span> Alias: debug' },
+        { html: '<span class="term-cmd">$ npm publish --dry-run</span>' },
+        { html: '<span class="term-success">[SUCCESS]</span> Package ready' },
+      ];
+
+      function addLine(linesContainer, entry) {
+        const line = document.createElement("p");
+        if (typeof entry === "string") {
+          line.textContent = entry;
+        } else {
+          line.innerHTML = entry.html;
+        }
+        linesContainer.appendChild(line);
+        if (linesContainer.childElementCount > 28) {
+          linesContainer.removeChild(linesContainer.firstElementChild);
+        }
+      }
+
+      function seedContainer(container, start) {
+        for (let i = 0; i < 16; i += 1) {
+          const index = (start + i) % templates.length;
+          addLine(container, templates[index]);
+        }
+      }
+
+      lineContainers.forEach((container, panel) => {
+        seedContainer(container, panel * 3);
+
+        let index = panel * 2;
+        setInterval(
+          () => {
+            addLine(container, templates[index % templates.length]);
+            index += 1;
+          },
+          280 + panel * 80,
+        );
+      });
+    </script>
+  </body>
+</html>
