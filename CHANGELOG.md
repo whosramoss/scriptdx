@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [1.1.0] - 2026-07-24
+
+### Added
+
+- JSDoc documentation on all public API exports for better IDE hints and typedocs.
+- Runtime input validation for logger, loading, menu, and table helpers (invalid arguments throw `TypeError`).
+- Expanded asynchronous test coverage for spinner and loading flows.
+
+### Changed
+
+- Modularized the public entry point into focused modules (`colors`, `logger`, `loading`, `spinner`, `menu`, `table`, `system`, `validations`, `font`) while keeping the same public exports.
+- Simplified the internal `ColorChain` implementation.
+
 ## [1.0.0] - 2026-05-28
 
 ### Added
@@ -30,4 +43,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual ESM/CJS build with TypeScript declarations (`dist/`).
 - Documentation in `docs/` (examples and API reference).
 
+[1.1.0]: https://github.com/whosramoss/scriptdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/whosramoss/scriptdx/releases/tag/v1.0.0

@@ -1,6 +1,6 @@
 {
   "name": "scriptdx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A terminal toolkit for colorful logs, loading effects, and developer-friendly CLI output.",
   "type": "module",
   "main": "./dist/index.cjs",
