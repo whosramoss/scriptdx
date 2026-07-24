@@ -9,6 +9,7 @@ import {
   isLinux,
   isWindows,
   linearLoading,
+  logColor,
   runMenuByIndex,
   runStep,
   showScriptTitle,
@@ -70,6 +71,12 @@ describe("logger and colors", () => {
     expect(output).toContain("info");
     expect(output).toContain("debug");
   });
+
+  it("logColor rejects unknown color at runtime", () => {
+    expect(() =>
+      logColor("notAColor" as "lightGreen", "x", "y"),
+    ).toThrow(TypeError);
+  });
 });
 
 describe("system", () => {
@@ -105,6 +112,14 @@ describe("loading", () => {
     expect(output).toContain("cab");
     expect(output.endsWith("\n")).toBe(true);
   });
+
+  it("simpleLoading rejects negative delayMs", async () => {
+    await expect(simpleLoading(1, -1)).rejects.toThrow(RangeError);
+  });
+
+  it("linearLoading rejects negative delayMs", async () => {
+    await expect(linearLoading("x", 1, -5)).rejects.toThrow(RangeError);
+  });
 });
 
 describe("menu and step", () => {
@@ -136,6 +151,22 @@ describe("menu and step", () => {
         },
       ],
       5,
+    );
+    expect(called).toBe(false);
+  });
+
+  it("runMenuByIndex ignores negative index", async () => {
+    let called = false;
+    await runMenuByIndex(
+      [
+        {
+          label: "One",
+          run: () => {
+            called = true;
+          },
+        },
+      ],
+      -1,
     );
     expect(called).toBe(false);
   });
@@ -189,6 +220,17 @@ describe("table", () => {
     const table = showTable(["Name", "Age"], [["Ana", "20"]]);
     expect(table).toContain("Name");
     expect(table).toContain("Ana");
+  });
+
+  it("showTable returns empty string for empty header", () => {
+    expect(showTable([], [["a"]])).toBe("");
+  });
+
+  it("showTable pads short rows to header length", () => {
+    const table = showTable(["A", "B", "C"], [["only"]]);
+    const lines = table.split("\n");
+    expect(lines).toHaveLength(3);
+    expect(lines[2]!.length).toBe(lines[0]!.length);
   });
 
   it("showTableWithBorders renders borders", () => {

@@ -9,6 +9,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function simpleLoading(repeat = 2, delayMs = 80): Promise<void> {
+  if (delayMs < 0) throw new RangeError("delayMs must be non-negative");
   let cycle = 0;
   while (repeat <= 0 || cycle < repeat) {
     for (const frame of LOADING_FRAMES) {
@@ -25,6 +26,7 @@ export async function linearLoading(
   repeat = 2,
   delayMs = 80,
 ): Promise<void> {
+  if (delayMs < 0) throw new RangeError("delayMs must be non-negative");
   process.stdout.write("\n");
   const chars = Array.from(text);
   if (chars.length === 0) {

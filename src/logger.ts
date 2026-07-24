@@ -9,6 +9,9 @@ export function logColor(
   prefix: string,
   message = "",
 ): void {
+  if (!(color in styles)) {
+    throw new TypeError(`Unknown logger color: ${String(color)}`);
+  }
   const code = styles[color];
   process.stdout.write(` ${ansi(code, prefix)} ${message}\n`);
 }

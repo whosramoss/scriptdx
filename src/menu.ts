@@ -14,11 +14,15 @@ export async function runMenuByIndex(
   items: MenuItem[],
   selectedIndex: number,
 ): Promise<void> {
-  const item = items[selectedIndex];
-  if (!item) {
+  if (
+    !Number.isInteger(selectedIndex) ||
+    selectedIndex < 0 ||
+    selectedIndex >= items.length
+  ) {
     logWarning("Invalid menu index.");
     return;
   }
+  const item = items[selectedIndex]!;
   process.stdout.write(
     `\n\n${ansi(styles.brightWhite, `Selected: ${item.label}`)}\n\n`,
   );

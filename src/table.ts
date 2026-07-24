@@ -9,10 +9,19 @@ function pad(value: string, width: number): string {
 }
 
 export function showTable(header: string[], rows: TableRow[]): string {
+  if (header.length === 0) return "";
+  const normalizedRows = rows.map((row): TableRow =>
+    row.length < header.length
+      ? [
+          ...row,
+          ...Array.from({ length: header.length - row.length }, () => ""),
+        ]
+      : row,
+  );
   const width = 24;
   const headerLine = header.map((h) => pad(h, width)).join(" ");
   const divider = header.map(() => "-".repeat(width)).join(" ");
-  const lines = rows.map((row) =>
+  const lines = normalizedRows.map((row) =>
     row.map((cell) => pad(cell, width)).join(" "),
   );
   return [headerLine, divider, ...lines].join("\n");
