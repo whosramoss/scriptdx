@@ -36,24 +36,13 @@ function paint(code: number, bold: boolean, text: string): string {
   return ansi(value, text);
 }
 
-export type ColorChain = ((text: string) => string) & {
-  readonly bold: ColorChain;
-};
+type ColorFn = (text: string) => string;
+export type ColorChain = ColorFn & { readonly bold: ColorFn };
 
 function makeColor(code: number): ColorChain {
-  const boldFn = (text: string): string => paint(code, true, text);
-  Object.defineProperty(boldFn, "bold", {
-    enumerable: true,
-    get: (): ColorChain => boldFn as ColorChain,
-  });
-
-  const plain = (text: string): string => paint(code, false, text);
-  Object.defineProperty(plain, "bold", {
-    enumerable: true,
-    get: (): ColorChain => boldFn as ColorChain,
-  });
-
-  return plain as ColorChain;
+  const boldFn: ColorFn = (text: string): string => paint(code, true, text);
+  const plain: ColorFn = (text: string): string => paint(code, false, text);
+  return Object.assign(plain, { bold: boldFn });
 }
 
 export const color = {
