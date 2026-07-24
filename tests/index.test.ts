@@ -1,4 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   color,
   createSpinner,
@@ -9,6 +16,7 @@ import {
   isLinux,
   isWindows,
   linearLoading,
+  logColor,
   runMenuByIndex,
   runStep,
   showScriptTitle,
@@ -70,6 +78,12 @@ describe("logger and colors", () => {
     expect(output).toContain("info");
     expect(output).toContain("debug");
   });
+
+  it("logColor rejects unknown color at runtime", () => {
+    expect(() =>
+      logColor("notAColor" as "lightGreen", "x", "y"),
+    ).toThrow(TypeError);
+  });
 });
 
 describe("system", () => {
@@ -105,6 +119,33 @@ describe("loading", () => {
     expect(output).toContain("cab");
     expect(output.endsWith("\n")).toBe(true);
   });
+
+  it("simpleLoading rejects negative delayMs", async () => {
+    await expect(simpleLoading(1, -1)).rejects.toThrow(RangeError);
+  });
+
+  it("linearLoading rejects negative delayMs", async () => {
+    await expect(linearLoading("x", 1, -5)).rejects.toThrow(RangeError);
+  });
+
+  it("simpleLoading(0) keeps cycling frames indefinitely", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+    mockStdoutWrites(chunks);
+
+    void simpleLoading(0, 20);
+
+    // 3 full cycles × 4 frames × 20ms = 240ms
+    await vi.advanceTimersByTimeAsync(240);
+
+    expect(chunks.filter((c) => c.startsWith("\r")).length).toBeGreaterThanOrEqual(
+      12,
+    );
+    expect(chunks.some((c) => c === "\n")).toBe(false);
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
 });
 
 describe("menu and step", () => {
@@ -136,6 +177,22 @@ describe("menu and step", () => {
         },
       ],
       5,
+    );
+    expect(called).toBe(false);
+  });
+
+  it("runMenuByIndex ignores negative index", async () => {
+    let called = false;
+    await runMenuByIndex(
+      [
+        {
+          label: "One",
+          run: () => {
+            called = true;
+          },
+        },
+      ],
+      -1,
     );
     expect(called).toBe(false);
   });
@@ -184,11 +241,88 @@ describe("spinner factory", () => {
   });
 });
 
+describe("createSpinner - ciclos completos", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("anima frames ao longo do tempo", () => {
+    const chunks: string[] = [];
+    const stream = {
+      write: (value: string): boolean => {
+        chunks.push(value);
+        return true;
+      },
+    } as NodeJS.WriteStream;
+    const spinner = createSpinner({ stream, intervalMs: 80 });
+
+    spinner.start("loading");
+    vi.advanceTimersByTime(240);
+    spinner.stop();
+
+    expect(chunks.filter((c) => c.startsWith("\r")).length).toBeGreaterThanOrEqual(
+      3,
+    );
+  });
+
+  it("start() ignorado se já está rodando", () => {
+    const chunks: string[] = [];
+    const stream = {
+      write: (value: string): boolean => {
+        chunks.push(value);
+        return true;
+      },
+    } as NodeJS.WriteStream;
+    const spinner = createSpinner({ stream, intervalMs: 80 });
+
+    spinner.start("first");
+    spinner.start("second");
+    vi.advanceTimersByTime(80);
+    spinner.stop();
+
+    expect(chunks.some((c) => c.includes("first"))).toBe(true);
+    expect(chunks.some((c) => c.includes("second"))).toBe(false);
+  });
+
+  it("stop() sem finalLine apenas limpa a linha", () => {
+    const chunks: string[] = [];
+    const stream = {
+      write: (value: string): boolean => {
+        chunks.push(value);
+        return true;
+      },
+    } as NodeJS.WriteStream;
+    const spinner = createSpinner({ stream, intervalMs: 80 });
+
+    spinner.start("running");
+    vi.advanceTimersByTime(80);
+    spinner.stop();
+
+    expect(chunks.some((c) => c === "\r\x1b[K")).toBe(true);
+    expect(chunks.some((c) => c.endsWith("\n"))).toBe(false);
+  });
+});
+
 describe("table", () => {
   it("showTable renders header and rows", () => {
     const table = showTable(["Name", "Age"], [["Ana", "20"]]);
     expect(table).toContain("Name");
     expect(table).toContain("Ana");
+  });
+
+  it("showTable returns empty string for empty header", () => {
+    expect(showTable([], [["a"]])).toBe("");
+  });
+
+  it("showTable pads short rows to header length", () => {
+    const table = showTable(["A", "B", "C"], [["only"]]);
+    const lines = table.split("\n");
+    expect(lines).toHaveLength(3);
+    expect(lines[2]!.length).toBe(lines[0]!.length);
   });
 
   it("showTableWithBorders renders borders", () => {
@@ -217,5 +351,16 @@ describe("font", () => {
     const lines = title.split("\n");
     expect(lines.length).toBe(10);
     expect(title.length).toBeGreaterThan(0);
+  });
+
+  it("showScriptTitle fallback for unmapped characters", () => {
+    const title = showScriptTitle("@!");
+    const lines = title.split("\n");
+
+    expect(lines).toHaveLength(10);
+    expect(lines[0]).toBe("@ !");
+    for (let i = 1; i < 10; i += 1) {
+      expect(lines[i]).toBe("");
+    }
   });
 });

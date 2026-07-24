@@ -8,6 +8,7 @@ Thumbs.db
 coverage/
 tests/
 src/
+.github/
 *.config.js
 *.config.ts
 tsconfig.json

@@ -30,10 +30,11 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "tutorial": "npx tsx docs/example.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "validate": "npm run typecheck && npm run lint && npm run test",
+    "tutorial": "npm run validate && npx tsx docs/example.ts"
   },
   "keywords": [
     "ansi",
