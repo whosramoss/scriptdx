@@ -1,7 +1,3 @@
-// -------------------------------------------------------
-// Category    :: FONT
-// Description :: ASCII glyph map for script titles.
-// -------------------------------------------------------
 export const FONT_HEIGHT = 10;
 
 export const FONT_MAP: Record<string, string[]> = {

@@ -1,7 +1,3 @@
-// -------------------------------------------------------
-// Category    :: STEP
-// Description :: Run async step with spinner.
-// -------------------------------------------------------
 import { logError, logSuccess } from "./logger.js";
 
 const SPINNER_FRAMES = [
@@ -17,6 +13,21 @@ const SPINNER_FRAMES = [
   "⠏",
 ] as const;
 
+/**
+ * Run an async task with a Braille spinner on stderr.
+ * Returns `true` on success, `false` on failure.
+ *
+ * @param task - Async function to execute
+ * @param message - Label shown during/after execution
+ * @returns Whether the task completed without throwing
+ *
+ * @example
+ * ```ts
+ * const ok = await runStep(async () => {
+ *   await deploy();
+ * }, "Deploying to production");
+ * ```
+ */
 export async function runStep(
   task: () => Promise<void>,
   message: string,
@@ -43,20 +54,41 @@ export async function runStep(
   }
 }
 
-// -------------------------------------------------------
-// Category    :: STEP
-// Description :: Backward-compatible spinner factory.
-// -------------------------------------------------------
+/**
+ * @category STEP
+ * @description Backward-compatible spinner factory.
+ */
+
+/** Manual spinner handle returned by {@link createSpinner}. */
 export type Spinner = {
+  /** Begin the animation; optional `text` is shown beside the frames. */
   start(text?: string): void;
+  /** Stop the animation; optionally write `finalLine` with a newline. */
   stop(finalLine?: string): void;
 };
 
+/** Options for {@link createSpinner}. */
 export type SpinnerOptions = {
+  /** Frame interval in milliseconds (default `80`). */
   intervalMs?: number;
+  /** Output stream (default `process.stderr`). */
   stream?: NodeJS.WriteStream;
 };
 
+/**
+ * Create a manually controlled Braille spinner.
+ *
+ * @param options - Interval and stream overrides
+ * @returns Spinner with `start` / `stop` methods
+ *
+ * @example
+ * ```ts
+ * const spinner = createSpinner();
+ * spinner.start("Fetching...");
+ * // ... work ...
+ * spinner.stop("Done");
+ * ```
+ */
 export function createSpinner(options: SpinnerOptions = {}): Spinner {
   const intervalMs = options.intervalMs ?? 80;
   const stream = options.stream ?? process.stderr;

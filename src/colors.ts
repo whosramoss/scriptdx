@@ -1,14 +1,29 @@
-// -------------------------------------------------------
-// Category    :: COLORS
-// Description :: ANSI helpers and color chains.
-// -------------------------------------------------------
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
 
+/**
+ * Wrap `text` with an ANSI SGR sequence and reset.
+ *
+ * @param code - SGR parameter string (e.g. `"1;32"` for bright green)
+ * @param text - Text to colorize
+ * @returns Colored string with trailing reset
+ */
 export function ansi(code: string, text: string): string {
   return `${ESC}${code}m${text}${RESET}`;
 }
 
+/**
+ * Named ANSI SGR codes used by logger helpers and `logColor`.
+ *
+ * Keys include base colors, light variants, `brightWhite`, and `reset`.
+ *
+ * @example
+ * ```ts
+ * import { styles } from "scriptdx";
+ * // Prefer `color.*` or `logColor` in app code; `styles` is for low-level use.
+ * console.log(styles.lightGreen);
+ * ```
+ */
 export const styles = {
   reset: RESET,
   black: "0;30",
@@ -29,6 +44,7 @@ export const styles = {
   brightWhite: "1;37",
 } as const;
 
+/** Valid color key accepted by `logColor` and related helpers. */
 export type LoggerColor = keyof typeof styles;
 
 function paint(code: number, bold: boolean, text: string): string {
@@ -37,6 +53,16 @@ function paint(code: number, bold: boolean, text: string): string {
 }
 
 type ColorFn = (text: string) => string;
+
+/**
+ * Callable color function that also exposes a `.bold` variant.
+ *
+ * @example
+ * ```ts
+ * color.red("error");
+ * color.green.bold("ok");
+ * ```
+ */
 export type ColorChain = ColorFn & { readonly bold: ColorFn };
 
 function makeColor(code: number): ColorChain {
@@ -45,6 +71,16 @@ function makeColor(code: number): ColorChain {
   return Object.assign(plain, { bold: boldFn });
 }
 
+/**
+ * Chainable ANSI color helpers for inline string styling.
+ *
+ * Each entry is a function `(text) => string` with a `.bold` variant.
+ *
+ * @example
+ * ```ts
+ * console.log(color.cyan("deploy") + " " + color.green.bold("ok"));
+ * ```
+ */
 export const color = {
   black: makeColor(30),
   red: makeColor(31),

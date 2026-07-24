@@ -1,13 +1,33 @@
-// -------------------------------------------------------
-// Category    :: TABLE
-// Description :: Build text tables.
-// -------------------------------------------------------
+/**
+ * @category TABLE
+ * @description Build text tables.
+ */
+
+/** One row of cell values for {@link showTable} / {@link showTableWithBorders}. */
 export type TableRow = string[];
 
 function pad(value: string, width: number): string {
   return value.padEnd(width, " ");
 }
 
+/**
+ * Build an aligned text table with fixed-width columns (24 chars each).
+ * Returns a multi-line string; does not print.
+ *
+ * @param header - Column headers
+ * @param rows - Data rows (short rows are padded with empty cells)
+ * @returns Multi-line table string, or `""` if `header` is empty
+ *
+ * @example
+ * ```ts
+ * console.log(
+ *   showTable(["Name", "Status"], [
+ *     ["api", "ok"],
+ *     ["db", "down"],
+ *   ]),
+ * );
+ * ```
+ */
 export function showTable(header: string[], rows: TableRow[]): string {
   if (header.length === 0) return "";
   const normalizedRows = rows.map((row): TableRow =>
@@ -27,6 +47,24 @@ export function showTable(header: string[], rows: TableRow[]): string {
   return [headerLine, divider, ...lines].join("\n");
 }
 
+/**
+ * Build a box-drawn text table with dynamic column widths.
+ * Returns a multi-line string; does not print.
+ *
+ * @param header - Column headers
+ * @param rows - Data rows
+ * @returns Multi-line bordered table string
+ *
+ * @example
+ * ```ts
+ * console.log(
+ *   showTableWithBorders(["Name", "Status"], [
+ *     ["api", "ok"],
+ *     ["db", "down"],
+ *   ]),
+ * );
+ * ```
+ */
 export function showTableWithBorders(
   header: string[],
   rows: TableRow[],
