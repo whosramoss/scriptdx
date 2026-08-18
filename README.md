@@ -1,6 +1,5 @@
 <h1>
   <p align="center">
-    <img src="https://scriptdx.whosramoss.com/public/icons/android-chrome-512x512.png" alt="logo" width="128">
     <br>scriptdx
   </p>
 </h1>
