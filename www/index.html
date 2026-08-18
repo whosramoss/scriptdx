@@ -69,142 +69,33 @@
     <link rel="stylesheet" href="./global.css" />
   </head>
   <body>
-    <div class="terminal-layer" aria-hidden="true">
-      <div class="terminal-bg terminal-a">
-        <div class="terminal-lines"></div>
-      </div>
-      <div class="terminal-bg terminal-b">
-        <div class="terminal-lines"></div>
-      </div>
-      <div class="terminal-bg terminal-c">
-        <div class="terminal-lines"></div>
-      </div>
-      <div class="terminal-bg terminal-d">
-        <div class="terminal-lines"></div>
-      </div>
-    </div>
+    <canvas id="terminal-canvas" aria-hidden="true"></canvas>
 
-    <main class="hero">
+    <main class="hero" id="hero">
       <div class="hero-header">
-        <span class="dot dot-red"></span>
-        <span class="dot dot-yellow"></span>
-        <span class="dot dot-green"></span>
-        <span class="hero-tab">terminal</span>
+        <span class="hero-tab">scriptdx</span>
       </div>
+
       <div class="hero-body">
-        <p class="prompt">$ package info</p>
-        <h1 class="title">scriptdx</h1>
-        <p class="description">
-          A terminal toolkit for colorful logs, loading effects, and
-          developer-friendly CLI output.
-        </p>
-        <a
-          class="npm-button"
-          href="https://www.npmjs.com/package/scriptdx"
-          target="_blank"
-          rel="noreferrer"
-        >
-          npm install scriptdx
-        </a>
+        <img class="hero-logo" src="./public/icons/icon.png" alt="scriptdx" />
+        <div class="hero-content">
+          <h1 class="title">scriptdx</h1>
+          <p class="description">
+            A terminal toolkit for colorful logs, loading effects, and
+            developer-friendly CLI output.
+          </p>
+          <a
+            class="npm-button"
+            href="https://www.npmjs.com/package/scriptdx"
+            target="_blank"
+            rel="noreferrer"
+          >
+            npm install scriptdx
+          </a>
+        </div>
       </div>
     </main>
 
-    <script>
-      const lineContainers = Array.from(
-        document.querySelectorAll(".terminal-lines"),
-      );
-      const templates = [
-        { html: '<span class="term-cmd">$ npm run tutorial</span>' },
-        { html: '<span class="term-dim">=== Log Functions ===</span>' },
-        {
-          html: '<span class="term-info">[INFO]</span> Starting simulated process...',
-        },
-        { html: '<span class="term-warning">[WARNING]</span> Low disk space' },
-        {
-          html: '<span class="term-error">[ERROR]</span> Failed to connect to database',
-        },
-        {
-          html: '<span class="term-success">[SUCCESS]</span> Process completed',
-        },
-        { html: '<span class="term-success">✔</span> Alias: success' },
-        { html: '<span class="term-info">i</span> Alias: info' },
-        { html: '<span class="term-warning">⚠</span> Alias: warning' },
-        { html: '<span class="term-cyan">Cyan text</span> from color object' },
-
-        {
-          html: '<span class="term-topic">Emulator | Host:Port | View in Emulator UI</span>',
-        },
-        {
-          html: '<span class="term-dim">Functions | localhost:5001 | http://localhost:4000/functions</span>',
-        },
-        {
-          html: '<span class="term-success">✔</span> 1. Waiting before creating a resource',
-        },
-        {
-          html: '<span class="term-success">✔</span> 2. Creating the resource',
-        },
-        {
-          html: '<span class="term-success">✔</span> 3. Deleting the resource',
-        },
-
-        { html: '<span class="term-success">✔</span> git installed' },
-        { html: '<span class="term-success">✔</span> node installed' },
-        { html: '<span class="term-error">✖</span> docker not found' },
-        { html: '<span class="term-success">ok</span>: git, node, npm' },
-        { html: '<span class="term-error">fail</span>: docker' },
-        {
-          html: '<span class="term-dim">isLinux(): false | isWindows(): true</span>',
-        },
-
-        {
-          html: '<span class="term-topic">Selected: View Loading Functions</span>',
-        },
-        {
-          html: '<span class="term-cmd">$ npm run build && npm run test</span>',
-        },
-        { html: '<span class="term-dim">> scriptdx@1.0.0 build</span>' },
-        { html: '<span class="term-dim">> tsup</span>' },
-        {
-          html: '<span class="term-success">[SUCCESS]</span> Typecheck passed',
-        },
-        { html: '<span class="term-success">[SUCCESS]</span> Tests passed' },
-        { html: '<span class="term-debug">●</span> Alias: debug' },
-        { html: '<span class="term-cmd">$ npm publish --dry-run</span>' },
-        { html: '<span class="term-success">[SUCCESS]</span> Package ready' },
-      ];
-
-      function addLine(linesContainer, entry) {
-        const line = document.createElement("p");
-        if (typeof entry === "string") {
-          line.textContent = entry;
-        } else {
-          line.innerHTML = entry.html;
-        }
-        linesContainer.appendChild(line);
-        if (linesContainer.childElementCount > 28) {
-          linesContainer.removeChild(linesContainer.firstElementChild);
-        }
-      }
-
-      function seedContainer(container, start) {
-        for (let i = 0; i < 16; i += 1) {
-          const index = (start + i) % templates.length;
-          addLine(container, templates[index]);
-        }
-      }
-
-      lineContainers.forEach((container, panel) => {
-        seedContainer(container, panel * 3);
-
-        let index = panel * 2;
-        setInterval(
-          () => {
-            addLine(container, templates[index % templates.length]);
-            index += 1;
-          },
-          280 + panel * 80,
-        );
-      });
-    </script>
+    <script src="./script.js"></script>
   </body>
 </html>
