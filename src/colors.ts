@@ -1,14 +1,53 @@
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
 
+function shouldUseColor(): boolean {
+  if ("NO_COLOR" in process.env) return false;
+  if ("FORCE_COLOR" in process.env) return true;
+  return process.stdout.isTTY === true;
+}
+
+let colorEnabled: boolean | undefined;
+
+/**
+ * Whether ANSI colors are currently applied.
+ *
+ * Detection (cached until {@link setColorEnabled} is called):
+ * `NO_COLOR` disables, `FORCE_COLOR` forces on, otherwise `stdout.isTTY`.
+ */
+export function isColorEnabled(): boolean {
+  if (colorEnabled === undefined) {
+    colorEnabled = shouldUseColor();
+  }
+  return colorEnabled;
+}
+
+/**
+ * Override automatic color detection.
+ *
+ * @param enabled - `true` to always emit ANSI, `false` to never emit it
+ *
+ * @example
+ * ```ts
+ * import { setColorEnabled, isColorEnabled } from "scriptdx";
+ * setColorEnabled(false);
+ * console.log(isColorEnabled()); // false
+ * ```
+ */
+export function setColorEnabled(enabled: boolean): void {
+  colorEnabled = enabled;
+}
+
 /**
  * Wrap `text` with an ANSI SGR sequence and reset.
+ * Returns `text` unchanged when color is disabled.
  *
  * @param code - SGR parameter string (e.g. `"1;32"` for bright green)
  * @param text - Text to colorize
- * @returns Colored string with trailing reset
+ * @returns Colored string with trailing reset, or plain `text`
  */
 export function ansi(code: string, text: string): string {
+  if (!isColorEnabled()) return text;
   return `${ESC}${code}m${text}${RESET}`;
 }
 
@@ -75,6 +114,7 @@ function makeColor(code: number): ColorChain {
  * Chainable ANSI color helpers for inline string styling.
  *
  * Each entry is a function `(text) => string` with a `.bold` variant.
+ * Sequences are omitted when {@link isColorEnabled} is `false`.
  *
  * @example
  * ```ts

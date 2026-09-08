@@ -1,4 +1,11 @@
-export { color, styles, type ColorChain, type LoggerColor } from "./colors.js";
+export {
+  color,
+  isColorEnabled,
+  setColorEnabled,
+  styles,
+  type ColorChain,
+  type LoggerColor,
+} from "./colors.js";
 export {
   debug,
   error,

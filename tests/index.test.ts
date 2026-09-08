@@ -13,6 +13,7 @@ import {
   error,
   hasTool,
   info,
+  isColorEnabled,
   isLinux,
   isWindows,
   linearLoading,
@@ -21,6 +22,7 @@ import {
   logTopic,
   runMenuByIndex,
   runStep,
+  setColorEnabled,
   showScriptTitle,
   showTable,
   showTableWithBorders,
@@ -46,13 +48,24 @@ function mockStream(target: string[]): NodeJS.WritableStream {
 afterEach(() => {
   if (originalPath === undefined) delete process.env.PATH;
   else process.env.PATH = originalPath;
+  setColorEnabled(true);
 });
 
 describe("logger and colors", () => {
+  beforeEach(() => {
+    setColorEnabled(true);
+  });
+
   it("color helpers include ANSI sequences", () => {
     expect(color.cyan("x")).toContain("\u001b[36m");
     expect(color.cyan.bold("x")).toContain("\u001b[1;36m");
     expect(styles.lightGreen).toBe("1;32");
+  });
+
+  it("omits ANSI when color is disabled", () => {
+    setColorEnabled(false);
+    expect(color.cyan("x")).toBe("x");
+    expect(color.cyan.bold("x")).toBe("x");
   });
 
   it("logger aliases write to the given stream", () => {
@@ -112,6 +125,86 @@ describe("logger and colors", () => {
     expect(() =>
       logColor("notAColor" as "lightGreen", "x", "y"),
     ).toThrow(TypeError);
+  });
+
+  it("setColorEnabled overrides detection", () => {
+    setColorEnabled(false);
+    expect(isColorEnabled()).toBe(false);
+    setColorEnabled(true);
+    expect(isColorEnabled()).toBe(true);
+  });
+});
+
+describe("color detection", () => {
+  const originalNoColor = process.env.NO_COLOR;
+  const originalForceColor = process.env.FORCE_COLOR;
+  const originalIsTTY = process.stdout.isTTY;
+
+  afterEach(() => {
+    if (originalNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = originalNoColor;
+    if (originalForceColor === undefined) delete process.env.FORCE_COLOR;
+    else process.env.FORCE_COLOR = originalForceColor;
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: originalIsTTY,
+    });
+  });
+
+  async function loadColors() {
+    vi.resetModules();
+    return import("../src/colors.js");
+  }
+
+  function stubIsTTY(value: boolean): void {
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value,
+    });
+  }
+
+  it("disables color when NO_COLOR is set", async () => {
+    process.env.NO_COLOR = "1";
+    delete process.env.FORCE_COLOR;
+    const { isColorEnabled, ansi } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+    expect(ansi("32", "ok")).toBe("ok");
+  });
+
+  it("forces color when FORCE_COLOR is set", async () => {
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = "1";
+    stubIsTTY(false);
+    const { isColorEnabled, ansi } = await loadColors();
+    expect(isColorEnabled()).toBe(true);
+    expect(ansi("32", "ok")).toContain("\u001b[32m");
+  });
+
+  it("NO_COLOR takes precedence over FORCE_COLOR", async () => {
+    process.env.NO_COLOR = "1";
+    process.env.FORCE_COLOR = "1";
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+  });
+
+  it("disables color when stdout is not a TTY", async () => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
+    stubIsTTY(false);
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+  });
+
+  it("enables color when stdout is a TTY", async () => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
+    stubIsTTY(true);
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(true);
   });
 });
 

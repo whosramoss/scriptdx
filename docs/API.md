@@ -40,7 +40,16 @@ Record of ANSI SGR codes: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `
 
 ### `color`
 
-Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant.
+Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant. ANSI sequences are omitted when color is disabled.
+
+### `isColorEnabled()` / `setColorEnabled(enabled)`
+
+Color is off when `NO_COLOR` is set, on when `FORCE_COLOR` is set, otherwise follows `process.stdout.isTTY`. `setColorEnabled` overrides that detection.
+
+```ts
+import { setColorEnabled, isColorEnabled } from "scriptdx";
+setColorEnabled(false);
+```
 
 ### Aliases
 
