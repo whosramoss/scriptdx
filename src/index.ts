@@ -13,6 +13,7 @@ export {
   logWarning,
   success,
   warning,
+  type OutputOptions,
 } from "./logger.js";
 export { isLinux, isWindows } from "./system.js";
 export { linearLoading, simpleLoading } from "./loading.js";

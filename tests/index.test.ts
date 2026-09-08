@@ -17,6 +17,8 @@ import {
   isWindows,
   linearLoading,
   logColor,
+  logSection,
+  logTopic,
   runMenuByIndex,
   runStep,
   showScriptTitle,
@@ -28,28 +30,20 @@ import {
   summarizeToolValidation,
   warning,
 } from "../src/index.js";
+import { getOutputStream } from "../src/output.js";
 
-const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-const originalStderrWrite = process.stderr.write.bind(process.stderr);
 const originalPath = process.env.PATH;
 
-function mockStdoutWrites(target: string[]): void {
-  process.stdout.write = (chunk: string | Uint8Array): boolean => {
-    target.push(String(chunk));
-    return true;
-  };
-}
-
-function mockStderrWrites(target: string[]): void {
-  process.stderr.write = (chunk: string | Uint8Array): boolean => {
-    target.push(String(chunk));
-    return true;
-  };
+function mockStream(target: string[]): NodeJS.WritableStream {
+  return {
+    write: (chunk: string | Uint8Array): boolean => {
+      target.push(String(chunk));
+      return true;
+    },
+  } as NodeJS.WriteStream;
 }
 
 afterEach(() => {
-  process.stdout.write = originalStdoutWrite;
-  process.stderr.write = originalStderrWrite;
   if (originalPath === undefined) delete process.env.PATH;
   else process.env.PATH = originalPath;
 });
@@ -61,15 +55,15 @@ describe("logger and colors", () => {
     expect(styles.lightGreen).toBe("1;32");
   });
 
-  it("logger aliases write to stdout", () => {
+  it("logger aliases write to the given stream", () => {
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
+    const stream = mockStream(chunks);
 
-    success("ok");
-    error("bad");
-    warning("warn");
-    info("info");
-    debug("debug");
+    success("ok", { stream });
+    error("bad", { stream });
+    warning("warn", { stream });
+    info("info", { stream });
+    debug("debug", { stream });
 
     const output = chunks.join("");
     expect(output).toContain("ok");
@@ -79,10 +73,60 @@ describe("logger and colors", () => {
     expect(output).toContain("debug");
   });
 
+  it("logColor writes to a custom stream", () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    logColor("lightGreen", "✔", "Build complete", { stream });
+
+    expect(chunks.join("")).toContain("Build complete");
+  });
+
+  it("logSection and logTopic write to a custom stream", () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    logSection("Deploy", "Production", { stream });
+    logTopic("Migrations", { stream });
+
+    const output = chunks.join("");
+    expect(output).toContain("Deploy");
+    expect(output).toContain("Production");
+    expect(output).toContain("Migrations");
+  });
+
+  it("writes to independent streams without mixing output", () => {
+    const first: string[] = [];
+    const second: string[] = [];
+
+    success("one", { stream: mockStream(first) });
+    success("two", { stream: mockStream(second) });
+
+    expect(first.join("")).toContain("one");
+    expect(second.join("")).toContain("two");
+    expect(first.join("")).not.toContain("two");
+    expect(second.join("")).not.toContain("one");
+  });
+
   it("logColor rejects unknown color at runtime", () => {
     expect(() =>
       logColor("notAColor" as "lightGreen", "x", "y"),
     ).toThrow(TypeError);
+  });
+});
+
+describe("getOutputStream", () => {
+  it("defaults to process.stdout", () => {
+    expect(getOutputStream()).toBe(process.stdout);
+  });
+
+  it("uses an explicit fallback", () => {
+    expect(getOutputStream(undefined, process.stderr)).toBe(process.stderr);
+  });
+
+  it("returns the provided stream", () => {
+    const stream = mockStream([]);
+    expect(getOutputStream({ stream })).toBe(stream);
   });
 });
 
@@ -96,9 +140,8 @@ describe("system", () => {
 describe("loading", () => {
   it("simpleLoading writes spinner frames and newline", async () => {
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    await simpleLoading(1, 0);
+    await simpleLoading(1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
     expect(output).toContain("\n");
@@ -109,9 +152,8 @@ describe("loading", () => {
 
   it("linearLoading rotates full text and ends line", async () => {
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    await linearLoading("abc", 1, 0);
+    await linearLoading("abc", 1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
     expect(output).toContain("abc");
@@ -131,9 +173,8 @@ describe("loading", () => {
   it("simpleLoading(0) keeps cycling frames indefinitely", async () => {
     vi.useFakeTimers();
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    void simpleLoading(0, 20);
+    void simpleLoading(0, 20, { stream: mockStream(chunks) });
 
     // 3 full cycles × 4 frames × 20ms = 240ms
     await vi.advanceTimersByTimeAsync(240);
@@ -150,6 +191,7 @@ describe("loading", () => {
 
 describe("menu and step", () => {
   it("runMenuByIndex executes selected callback", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -161,11 +203,14 @@ describe("menu and step", () => {
         },
       ],
       0,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(true);
+    expect(chunks.join("")).toContain("Selected: One");
   });
 
   it("runMenuByIndex ignores invalid index", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -177,11 +222,14 @@ describe("menu and step", () => {
         },
       ],
       5,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(false);
+    expect(chunks.join("")).toContain("Invalid menu index");
   });
 
   it("runMenuByIndex ignores negative index", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -193,45 +241,39 @@ describe("menu and step", () => {
         },
       ],
       -1,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(false);
+    expect(chunks.join("")).toContain("Invalid menu index");
   });
 
   it("runStep returns true when task succeeds", async () => {
-    const out: string[] = [];
-    const err: string[] = [];
-    mockStdoutWrites(out);
-    mockStderrWrites(err);
+    const chunks: string[] = [];
 
-    const result = await runStep(async () => Promise.resolve(), "step ok");
+    const result = await runStep(async () => Promise.resolve(), "step ok", {
+      stream: mockStream(chunks),
+    });
     expect(result).toBe(true);
-    expect(out.join("")).toContain("step ok");
+    expect(chunks.join("")).toContain("step ok");
   });
 
   it("runStep returns false when task fails", async () => {
-    const out: string[] = [];
-    const err: string[] = [];
-    mockStdoutWrites(out);
-    mockStderrWrites(err);
+    const chunks: string[] = [];
 
     const result = await runStep(
       async () => Promise.reject(new Error("fail")),
       "step fail",
+      { stream: mockStream(chunks) },
     );
     expect(result).toBe(false);
-    expect(out.join("")).toContain("step fail");
+    expect(chunks.join("")).toContain("step fail");
   });
 });
 
 describe("spinner factory", () => {
   it("createSpinner start/stop writes final line", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
 
     const spinner = createSpinner({ stream, intervalMs: 10 });
     spinner.start("running");
@@ -252,12 +294,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("anima frames ao longo do tempo", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("loading");
@@ -271,12 +308,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("start() ignorado se já está rodando", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("first");
@@ -290,12 +322,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("stop() sem finalLine apenas limpa a linha", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("running");
