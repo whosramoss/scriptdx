@@ -144,6 +144,8 @@ Split a `Record<string, boolean>` into `{ ok: string[], fail: string[] }`.
 
 ## Font
 
+Prefer `import { showScriptTitle } from "scriptdx/font"` so the glyph map is not part of the main entry graph. `showScriptTitle` remains available from `scriptdx` for compatibility; the map is allocated on first call either way.
+
 ### `showScriptTitle(word): string`
 
 Render `word` as large block-letter ASCII art (built-in glyph map). Returns multi-line string.

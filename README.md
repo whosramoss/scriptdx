@@ -80,4 +80,4 @@ See **[docs/README.md](https://github.com/whosramoss/scriptdx/blob/main/docs/REA
 | **Menu**        | `runMenuByIndex` for numbered CLI menus                                  |
 | **Validations** | `hasTool`, `summarizeToolValidation` for dependency checks               |
 | **System**      | `isLinux`, `isWindows`                                                   |
-| **Font**        | `showScriptTitle` — large ASCII banner text                              |
+| **Font**        | `showScriptTitle` via `scriptdx/font` — large ASCII banner text           |

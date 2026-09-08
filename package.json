@@ -16,6 +16,16 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./font": {
+      "import": {
+        "types": "./dist/font.d.ts",
+        "default": "./dist/font.js"
+      },
+      "require": {
+        "types": "./dist/font.d.cts",
+        "default": "./dist/font.cjs"
+      }
     }
   },
   "files": [

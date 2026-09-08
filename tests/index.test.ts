@@ -390,4 +390,14 @@ describe("font", () => {
       expect(lines[i]).toBe("");
     }
   });
+
+  it("is available from the font entry module", async () => {
+    const font = await import("../src/font/index.js");
+    expect(font.showScriptTitle("Ab")).toBe(showScriptTitle("Ab"));
+  });
+
+  it("allocates the glyph map once and reuses it", async () => {
+    const { getFontMap } = await import("../src/font/glyphs.js");
+    expect(getFontMap()).toBe(getFontMap());
+  });
 });
