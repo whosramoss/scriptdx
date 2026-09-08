@@ -352,6 +352,42 @@ describe("table", () => {
     expect(lines[2]!.length).toBe(lines[0]!.length);
   });
 
+  it("showTable default column width stays 24", () => {
+    const table = showTable(["A"], [["x"]]);
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(24);
+    expect(lines[1]).toBe("-".repeat(24));
+  });
+
+  it("showTable auto widths follow content", () => {
+    const table = showTable(
+      ["ID", "Name"],
+      [["1", "Ana"]],
+      { columnWidth: "auto" },
+    );
+    const lines = table.split("\n");
+    expect(lines[0]).toBe("ID Name");
+    expect(lines[1]).toBe("-- ----");
+    expect(lines[2]!.length).toBe(lines[0]!.length);
+  });
+
+  it("showTable auto widths honor minWidth", () => {
+    const table = showTable(["ID"], [["1"]], {
+      columnWidth: "auto",
+      minWidth: 10,
+    });
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(10);
+    expect(lines[1]).toBe("-".repeat(10));
+  });
+
+  it("showTable accepts a custom numeric width", () => {
+    const table = showTable(["A"], [["x"]], { columnWidth: 8 });
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(8);
+    expect(lines[1]).toBe("-".repeat(8));
+  });
+
   it("showTableWithBorders renders borders", () => {
     const table = showTableWithBorders(["Name", "Age"], [["Bob", "30"]]);
     expect(table).toContain("+");

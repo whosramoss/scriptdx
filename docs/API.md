@@ -116,9 +116,13 @@ Manual spinner control.
 
 ## Table
 
-### `showTable(header, rows): string`
+### `showTable(header, rows, options?): string`
 
-Aligned columns with fixed width (24 chars per column). Returns multi-line string (does not print).
+Aligned columns. Default width is **24** chars per column (backward-compatible). Pass `{ columnWidth: "auto" }` to size each column to its content, optionally with `minWidth`. Returns a multi-line string (does not print).
+
+```ts
+showTable(["ID", "Name"], data, { columnWidth: "auto", minWidth: 10 });
+```
 
 ### `showTableWithBorders(header, rows): string`
 
@@ -127,6 +131,10 @@ Box-drawn table with dynamic column widths. Returns multi-line string.
 ### `TableRow`
 
 `string[]` — one row of cell values.
+
+### `TableOptions`
+
+`{ columnWidth?: number | "auto"; minWidth?: number }`
 
 ---
 
@@ -160,4 +168,5 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
 - `TableRow`
+- `TableOptions`
 - `ToolValidationResult`
