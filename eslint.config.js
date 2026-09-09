@@ -13,6 +13,17 @@ export default tseslint.config(
     },
   },
   {
+    files: ["www/**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        requestAnimationFrame: "readonly",
+      },
+    },
+  },
+  {
     ignores: [
       "dist/**",
       "node_modules/**",
