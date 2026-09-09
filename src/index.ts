@@ -1,4 +1,11 @@
-export { color, styles, type ColorChain, type LoggerColor } from "./colors.js";
+export {
+  color,
+  isColorEnabled,
+  setColorEnabled,
+  styles,
+  type ColorChain,
+  type LoggerColor,
+} from "./colors.js";
 export {
   debug,
   error,
@@ -13,6 +20,7 @@ export {
   logWarning,
   success,
   warning,
+  type OutputOptions,
 } from "./logger.js";
 export { isLinux, isWindows } from "./system.js";
 export { linearLoading, simpleLoading } from "./loading.js";
@@ -23,7 +31,7 @@ export {
   type SpinnerOptions,
 } from "./spinner.js";
 export { runMenuByIndex, type MenuItem } from "./menu.js";
-export { showTable, showTableWithBorders, type TableRow } from "./table.js";
+export { showTable, showTableWithBorders, type TableOptions, type TableRow } from "./table.js";
 export {
   hasTool,
   summarizeToolValidation,

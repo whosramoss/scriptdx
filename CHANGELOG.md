@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [1.2.0] - 2026-09-08
+
+### Added
+
+- Optional `stream` parameter on `logColor`, `logSuccess`, `logError`, `logSection`, `simpleLoading`, and `linearLoading` for custom output redirection.
+- Lazy loading for `FONT_MAP` to reduce startup time when fonts are unused.
+- `scriptdx/font` subpath export for explicit font module import.
+- `TableOptions` type with `columnWidth` and `minWidth` options for `showTable`.
+- `columnWidth: "auto"` option for dynamic column width based on content.
+- `NO_COLOR` environment variable support per [no-color.org](https://no-color.org/) standard.
+- `FORCE_COLOR` environment variable support for CI environments.
+- Automatic TTY detection to disable colors when output is redirected.
+- `isColorEnabled()` function to check current color state.
+- `setColorEnabled(enabled: boolean)` function for programmatic color control.
+
+### Changed
+
+- `showTable` now accepts optional `TableOptions` third parameter (backward-compatible).
+
 ## [1.1.0] - 2026-07-24
 
 ### Added
@@ -43,5 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual ESM/CJS build with TypeScript declarations (`dist/`).
 - Documentation in `docs/` (examples and API reference).
 
+[1.2.0]: https://github.com/whosramoss/scriptdx/releases/tag/v1.2.0
 [1.1.0]: https://github.com/whosramoss/scriptdx/releases/tag/v1.1.0
 [1.0.0]: https://github.com/whosramoss/scriptdx/releases/tag/v1.0.0

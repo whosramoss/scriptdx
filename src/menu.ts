@@ -1,5 +1,6 @@
 import { ansi, styles } from "./colors.js";
 import { logWarning } from "./logger.js";
+import { getOutputStream, type OutputOptions } from "./output.js";
 
 /** A labeled action that can be selected by index in a CLI menu. */
 export type MenuItem = {
@@ -15,6 +16,7 @@ export type MenuItem = {
  *
  * @param items - Menu entries with labels and handlers
  * @param selectedIndex - Zero-based index of the item to run
+ * @param options - Optional `stream` (default `process.stdout`)
  *
  * @example
  * ```ts
@@ -30,17 +32,18 @@ export type MenuItem = {
 export async function runMenuByIndex(
   items: MenuItem[],
   selectedIndex: number,
+  options?: OutputOptions,
 ): Promise<void> {
   if (
     !Number.isInteger(selectedIndex) ||
     selectedIndex < 0 ||
     selectedIndex >= items.length
   ) {
-    logWarning("Invalid menu index.");
+    logWarning("Invalid menu index.", options);
     return;
   }
   const item = items[selectedIndex]!;
-  process.stdout.write(
+  getOutputStream(options).write(
     `\n\n${ansi(styles.brightWhite, `Selected: ${item.label}`)}\n\n`,
   );
   await item.run();

@@ -1,6 +1,14 @@
 export const FONT_HEIGHT = 10;
 
-export const FONT_MAP: Record<string, string[]> = {
+let fontMap: Record<string, string[]> | undefined;
+
+/**
+ * Glyph table used by `showScriptTitle`.
+ * Built on first call so importing the library does not allocate the map.
+ */
+export function getFontMap(): Record<string, string[]> {
+  if (fontMap === undefined) {
+    fontMap = {
   A: [
     "   ░███    ",
     "  ░██░██   ",
@@ -625,4 +633,7 @@ export const FONT_MAP: Record<string, string[]> = {
     "           ",
     "           ",
   ],
-};
+    };
+  }
+  return fontMap;
+}

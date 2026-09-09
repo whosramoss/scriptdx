@@ -1,6 +1,6 @@
 # scriptdx API Reference
 
-Terminal toolkit for colorful logs, loading effects, tables, steps, and CLI output. All functions write to `process.stdout` or `process.stderr` unless noted.
+Terminal toolkit for colorful logs, loading effects, tables, steps, and CLI output. Logger, loading, and menu helpers write to `process.stdout` by default. `createSpinner` and the `runStep` spinner write to `process.stderr` unless a `stream` is provided. Pass `{ stream }` to redirect any of these writers.
 
 ```ts
 import { logSuccess, runStep, showTable } from "scriptdx";
@@ -12,19 +12,25 @@ Requires **Node.js 18+**. See [README.md](https://github.com/whosramoss/scriptdx
 
 ## Logger
 
-### `logColor(color, prefix, message?)`
+All logger helpers accept an optional last argument `{ stream?: NodeJS.WritableStream }` (type `OutputOptions`). Default: `process.stdout`.
+
+### `logColor(color, prefix, message?, options?)`
 
 Write a line with ANSI styling. `color` is a key of `styles` (see below). `prefix` is the left label; `message` is optional trailing text.
 
-### `logSuccess(message)` / `logInfo(message)` / `logWarning(message)` / `logError(message)` / `logQuestion(message)`
+```ts
+logColor("lightGreen", "✔", "Build complete", { stream: customStream });
+```
+
+### `logSuccess(message, options?)` / `logInfo(message, options?)` / `logWarning(message, options?)` / `logError(message, options?)` / `logQuestion(message, options?)`
 
 Convenience loggers with icons (✔, i, ⚠, ✖, ?).
 
-### `logSection(title, subtitle?)`
+### `logSection(title, subtitle?, options?)`
 
 Print a section header with a green divider line, bright title, and optional subtitle.
 
-### `logTopic(topic)`
+### `logTopic(topic, options?)`
 
 Print a topic line with `➤` prefix and surrounding blank lines.
 
@@ -34,7 +40,16 @@ Record of ANSI SGR codes: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `
 
 ### `color`
 
-Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant.
+Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant. ANSI sequences are omitted when color is disabled.
+
+### `isColorEnabled()` / `setColorEnabled(enabled)`
+
+Color is off when `NO_COLOR` is set, on when `FORCE_COLOR` is set, otherwise follows `process.stdout.isTTY`. `setColorEnabled` overrides that detection.
+
+```ts
+import { setColorEnabled, isColorEnabled } from "scriptdx";
+setColorEnabled(false);
+```
 
 ### Aliases
 
@@ -62,13 +77,13 @@ Object of chainable color functions: `color.black`, `color.red`, `color.green`, 
 
 ## Loading
 
-### `simpleLoading(repeat?, delayMs?): Promise<void>`
+### `simpleLoading(repeat?, delayMs?, options?): Promise<void>`
 
-Cycle frames `| / - \\` on stdout. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until interrupted externally.
+Cycle frames `| / - \\`. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until interrupted externally. Optional `stream` defaults to `process.stdout`.
 
-### `linearLoading(text, repeat?, delayMs?): Promise<void>`
+### `linearLoading(text, repeat?, delayMs?, options?): Promise<void>`
 
-Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`.
+Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`. Optional `stream` defaults to `process.stdout`.
 
 ---
 
@@ -83,17 +98,17 @@ type MenuItem = {
 };
 ```
 
-### `runMenuByIndex(items, selectedIndex): Promise<void>`
+### `runMenuByIndex(items, selectedIndex, options?): Promise<void>`
 
-Run the menu item at `selectedIndex`. Logs a warning if the index is invalid.
+Run the menu item at `selectedIndex`. Logs a warning if the index is invalid. Optional `stream` defaults to `process.stdout`.
 
 ---
 
 ## Step & spinner
 
-### `runStep(task, message): Promise<boolean>`
+### `runStep(task, message, options?): Promise<boolean>`
 
-Run async `task` while showing a Braille spinner on **stderr**. On success: clears line and `logSuccess(message)`; returns `true`. On failure: `logError(message)`; returns `false`.
+Run async `task` while showing a Braille spinner on **stderr**. On success: clears line and `logSuccess(message)`; returns `true`. On failure: `logError(message)`; returns `false`. When `options.stream` is set, both the spinner and the final log write to that stream.
 
 ### `createSpinner(options?): Spinner`
 
@@ -110,9 +125,13 @@ Manual spinner control.
 
 ## Table
 
-### `showTable(header, rows): string`
+### `showTable(header, rows, options?): string`
 
-Aligned columns with fixed width (24 chars per column). Returns multi-line string (does not print).
+Aligned columns. Default width is **24** chars per column (backward-compatible). Pass `{ columnWidth: "auto" }` to size each column to its content, optionally with `minWidth`. Returns a multi-line string (does not print).
+
+```ts
+showTable(["ID", "Name"], data, { columnWidth: "auto", minWidth: 10 });
+```
 
 ### `showTableWithBorders(header, rows): string`
 
@@ -121,6 +140,10 @@ Box-drawn table with dynamic column widths. Returns multi-line string.
 ### `TableRow`
 
 `string[]` — one row of cell values.
+
+### `TableOptions`
+
+`{ columnWidth?: number | "auto"; minWidth?: number }`
 
 ---
 
@@ -138,6 +161,8 @@ Split a `Record<string, boolean>` into `{ ok: string[], fail: string[] }`.
 
 ## Font
 
+Prefer `import { showScriptTitle } from "scriptdx/font"` so the glyph map is not part of the main entry graph. `showScriptTitle` remains available from `scriptdx` for compatibility; the map is allocated on first call either way.
+
 ### `showScriptTitle(word): string`
 
 Render `word` as large block-letter ASCII art (built-in glyph map). Returns multi-line string.
@@ -148,7 +173,9 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 
 - `LoggerColor` — keyof `styles`
 - `ColorChain` — color function with `.bold`
+- `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
 - `TableRow`
+- `TableOptions`
 - `ToolValidationResult`

@@ -13,12 +13,16 @@ import {
   error,
   hasTool,
   info,
+  isColorEnabled,
   isLinux,
   isWindows,
   linearLoading,
   logColor,
+  logSection,
+  logTopic,
   runMenuByIndex,
   runStep,
+  setColorEnabled,
   showScriptTitle,
   showTable,
   showTableWithBorders,
@@ -28,48 +32,51 @@ import {
   summarizeToolValidation,
   warning,
 } from "../src/index.js";
+import { getOutputStream } from "../src/output.js";
 
-const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-const originalStderrWrite = process.stderr.write.bind(process.stderr);
 const originalPath = process.env.PATH;
 
-function mockStdoutWrites(target: string[]): void {
-  process.stdout.write = (chunk: string | Uint8Array): boolean => {
-    target.push(String(chunk));
-    return true;
-  };
-}
-
-function mockStderrWrites(target: string[]): void {
-  process.stderr.write = (chunk: string | Uint8Array): boolean => {
-    target.push(String(chunk));
-    return true;
-  };
+function mockStream(target: string[]): NodeJS.WritableStream {
+  return {
+    write: (chunk: string | Uint8Array): boolean => {
+      target.push(String(chunk));
+      return true;
+    },
+  } as NodeJS.WriteStream;
 }
 
 afterEach(() => {
-  process.stdout.write = originalStdoutWrite;
-  process.stderr.write = originalStderrWrite;
   if (originalPath === undefined) delete process.env.PATH;
   else process.env.PATH = originalPath;
+  setColorEnabled(true);
 });
 
 describe("logger and colors", () => {
+  beforeEach(() => {
+    setColorEnabled(true);
+  });
+
   it("color helpers include ANSI sequences", () => {
     expect(color.cyan("x")).toContain("\u001b[36m");
     expect(color.cyan.bold("x")).toContain("\u001b[1;36m");
     expect(styles.lightGreen).toBe("1;32");
   });
 
-  it("logger aliases write to stdout", () => {
-    const chunks: string[] = [];
-    mockStdoutWrites(chunks);
+  it("omits ANSI when color is disabled", () => {
+    setColorEnabled(false);
+    expect(color.cyan("x")).toBe("x");
+    expect(color.cyan.bold("x")).toBe("x");
+  });
 
-    success("ok");
-    error("bad");
-    warning("warn");
-    info("info");
-    debug("debug");
+  it("logger aliases write to the given stream", () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    success("ok", { stream });
+    error("bad", { stream });
+    warning("warn", { stream });
+    info("info", { stream });
+    debug("debug", { stream });
 
     const output = chunks.join("");
     expect(output).toContain("ok");
@@ -79,10 +86,140 @@ describe("logger and colors", () => {
     expect(output).toContain("debug");
   });
 
+  it("logColor writes to a custom stream", () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    logColor("lightGreen", "✔", "Build complete", { stream });
+
+    expect(chunks.join("")).toContain("Build complete");
+  });
+
+  it("logSection and logTopic write to a custom stream", () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    logSection("Deploy", "Production", { stream });
+    logTopic("Migrations", { stream });
+
+    const output = chunks.join("");
+    expect(output).toContain("Deploy");
+    expect(output).toContain("Production");
+    expect(output).toContain("Migrations");
+  });
+
+  it("writes to independent streams without mixing output", () => {
+    const first: string[] = [];
+    const second: string[] = [];
+
+    success("one", { stream: mockStream(first) });
+    success("two", { stream: mockStream(second) });
+
+    expect(first.join("")).toContain("one");
+    expect(second.join("")).toContain("two");
+    expect(first.join("")).not.toContain("two");
+    expect(second.join("")).not.toContain("one");
+  });
+
   it("logColor rejects unknown color at runtime", () => {
     expect(() =>
       logColor("notAColor" as "lightGreen", "x", "y"),
     ).toThrow(TypeError);
+  });
+
+  it("setColorEnabled overrides detection", () => {
+    setColorEnabled(false);
+    expect(isColorEnabled()).toBe(false);
+    setColorEnabled(true);
+    expect(isColorEnabled()).toBe(true);
+  });
+});
+
+describe("color detection", () => {
+  const originalNoColor = process.env.NO_COLOR;
+  const originalForceColor = process.env.FORCE_COLOR;
+  const originalIsTTY = process.stdout.isTTY;
+
+  afterEach(() => {
+    if (originalNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = originalNoColor;
+    if (originalForceColor === undefined) delete process.env.FORCE_COLOR;
+    else process.env.FORCE_COLOR = originalForceColor;
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: originalIsTTY,
+    });
+  });
+
+  async function loadColors() {
+    vi.resetModules();
+    return import("../src/colors.js");
+  }
+
+  function stubIsTTY(value: boolean): void {
+    Object.defineProperty(process.stdout, "isTTY", {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value,
+    });
+  }
+
+  it("disables color when NO_COLOR is set", async () => {
+    process.env.NO_COLOR = "1";
+    delete process.env.FORCE_COLOR;
+    const { isColorEnabled, ansi } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+    expect(ansi("32", "ok")).toBe("ok");
+  });
+
+  it("forces color when FORCE_COLOR is set", async () => {
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = "1";
+    stubIsTTY(false);
+    const { isColorEnabled, ansi } = await loadColors();
+    expect(isColorEnabled()).toBe(true);
+    expect(ansi("32", "ok")).toContain("\u001b[32m");
+  });
+
+  it("NO_COLOR takes precedence over FORCE_COLOR", async () => {
+    process.env.NO_COLOR = "1";
+    process.env.FORCE_COLOR = "1";
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+  });
+
+  it("disables color when stdout is not a TTY", async () => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
+    stubIsTTY(false);
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(false);
+  });
+
+  it("enables color when stdout is a TTY", async () => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
+    stubIsTTY(true);
+    const { isColorEnabled } = await loadColors();
+    expect(isColorEnabled()).toBe(true);
+  });
+});
+
+describe("getOutputStream", () => {
+  it("defaults to process.stdout", () => {
+    expect(getOutputStream()).toBe(process.stdout);
+  });
+
+  it("uses an explicit fallback", () => {
+    expect(getOutputStream(undefined, process.stderr)).toBe(process.stderr);
+  });
+
+  it("returns the provided stream", () => {
+    const stream = mockStream([]);
+    expect(getOutputStream({ stream })).toBe(stream);
   });
 });
 
@@ -96,9 +233,8 @@ describe("system", () => {
 describe("loading", () => {
   it("simpleLoading writes spinner frames and newline", async () => {
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    await simpleLoading(1, 0);
+    await simpleLoading(1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
     expect(output).toContain("\n");
@@ -109,9 +245,8 @@ describe("loading", () => {
 
   it("linearLoading rotates full text and ends line", async () => {
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    await linearLoading("abc", 1, 0);
+    await linearLoading("abc", 1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
     expect(output).toContain("abc");
@@ -131,9 +266,8 @@ describe("loading", () => {
   it("simpleLoading(0) keeps cycling frames indefinitely", async () => {
     vi.useFakeTimers();
     const chunks: string[] = [];
-    mockStdoutWrites(chunks);
 
-    void simpleLoading(0, 20);
+    void simpleLoading(0, 20, { stream: mockStream(chunks) });
 
     // 3 full cycles × 4 frames × 20ms = 240ms
     await vi.advanceTimersByTimeAsync(240);
@@ -150,6 +284,7 @@ describe("loading", () => {
 
 describe("menu and step", () => {
   it("runMenuByIndex executes selected callback", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -161,11 +296,14 @@ describe("menu and step", () => {
         },
       ],
       0,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(true);
+    expect(chunks.join("")).toContain("Selected: One");
   });
 
   it("runMenuByIndex ignores invalid index", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -177,11 +315,14 @@ describe("menu and step", () => {
         },
       ],
       5,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(false);
+    expect(chunks.join("")).toContain("Invalid menu index");
   });
 
   it("runMenuByIndex ignores negative index", async () => {
+    const chunks: string[] = [];
     let called = false;
     await runMenuByIndex(
       [
@@ -193,45 +334,39 @@ describe("menu and step", () => {
         },
       ],
       -1,
+      { stream: mockStream(chunks) },
     );
     expect(called).toBe(false);
+    expect(chunks.join("")).toContain("Invalid menu index");
   });
 
   it("runStep returns true when task succeeds", async () => {
-    const out: string[] = [];
-    const err: string[] = [];
-    mockStdoutWrites(out);
-    mockStderrWrites(err);
+    const chunks: string[] = [];
 
-    const result = await runStep(async () => Promise.resolve(), "step ok");
+    const result = await runStep(async () => Promise.resolve(), "step ok", {
+      stream: mockStream(chunks),
+    });
     expect(result).toBe(true);
-    expect(out.join("")).toContain("step ok");
+    expect(chunks.join("")).toContain("step ok");
   });
 
   it("runStep returns false when task fails", async () => {
-    const out: string[] = [];
-    const err: string[] = [];
-    mockStdoutWrites(out);
-    mockStderrWrites(err);
+    const chunks: string[] = [];
 
     const result = await runStep(
       async () => Promise.reject(new Error("fail")),
       "step fail",
+      { stream: mockStream(chunks) },
     );
     expect(result).toBe(false);
-    expect(out.join("")).toContain("step fail");
+    expect(chunks.join("")).toContain("step fail");
   });
 });
 
 describe("spinner factory", () => {
   it("createSpinner start/stop writes final line", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
 
     const spinner = createSpinner({ stream, intervalMs: 10 });
     spinner.start("running");
@@ -252,12 +387,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("anima frames ao longo do tempo", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("loading");
@@ -271,12 +401,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("start() ignorado se já está rodando", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("first");
@@ -290,12 +415,7 @@ describe("createSpinner - ciclos completos", () => {
 
   it("stop() sem finalLine apenas limpa a linha", () => {
     const chunks: string[] = [];
-    const stream = {
-      write: (value: string): boolean => {
-        chunks.push(value);
-        return true;
-      },
-    } as NodeJS.WriteStream;
+    const stream = mockStream(chunks);
     const spinner = createSpinner({ stream, intervalMs: 80 });
 
     spinner.start("running");
@@ -323,6 +443,42 @@ describe("table", () => {
     const lines = table.split("\n");
     expect(lines).toHaveLength(3);
     expect(lines[2]!.length).toBe(lines[0]!.length);
+  });
+
+  it("showTable default column width stays 24", () => {
+    const table = showTable(["A"], [["x"]]);
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(24);
+    expect(lines[1]).toBe("-".repeat(24));
+  });
+
+  it("showTable auto widths follow content", () => {
+    const table = showTable(
+      ["ID", "Name"],
+      [["1", "Ana"]],
+      { columnWidth: "auto" },
+    );
+    const lines = table.split("\n");
+    expect(lines[0]).toBe("ID Name");
+    expect(lines[1]).toBe("-- ----");
+    expect(lines[2]!.length).toBe(lines[0]!.length);
+  });
+
+  it("showTable auto widths honor minWidth", () => {
+    const table = showTable(["ID"], [["1"]], {
+      columnWidth: "auto",
+      minWidth: 10,
+    });
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(10);
+    expect(lines[1]).toBe("-".repeat(10));
+  });
+
+  it("showTable accepts a custom numeric width", () => {
+    const table = showTable(["A"], [["x"]], { columnWidth: 8 });
+    const lines = table.split("\n");
+    expect(lines[0]!.length).toBe(8);
+    expect(lines[1]).toBe("-".repeat(8));
   });
 
   it("showTableWithBorders renders borders", () => {
@@ -362,5 +518,15 @@ describe("font", () => {
     for (let i = 1; i < 10; i += 1) {
       expect(lines[i]).toBe("");
     }
+  });
+
+  it("is available from the font entry module", async () => {
+    const font = await import("../src/font/index.js");
+    expect(font.showScriptTitle("Ab")).toBe(showScriptTitle("Ab"));
+  });
+
+  it("allocates the glyph map once and reuses it", async () => {
+    const { getFontMap } = await import("../src/font/glyphs.js");
+    expect(getFontMap()).toBe(getFontMap());
   });
 });

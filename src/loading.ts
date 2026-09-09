@@ -1,3 +1,5 @@
+import { getOutputStream, type OutputOptions } from "./output.js";
+
 const LOADING_FRAMES = ["|", "/", "-", "\\"] as const;
 
 function sleep(ms: number): Promise<void> {
@@ -5,35 +7,42 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Cycle classic spinner frames (`| / - \\`) on stdout.
+ * Cycle classic spinner frames (`| / - \\`) on a stream.
  *
  * @param repeat - Number of full cycles (default `2`). If `<= 0`, loops until interrupted
  * @param delayMs - Delay between frames in milliseconds (default `80`)
+ * @param options - Optional `stream` (default `process.stdout`)
  *
  * @example
  * ```ts
  * await simpleLoading(3, 60);
  * ```
  */
-export async function simpleLoading(repeat = 2, delayMs = 80): Promise<void> {
+export async function simpleLoading(
+  repeat = 2,
+  delayMs = 80,
+  options?: OutputOptions,
+): Promise<void> {
   if (delayMs < 0) throw new RangeError("delayMs must be non-negative");
+  const stream = getOutputStream(options);
   let cycle = 0;
   while (repeat <= 0 || cycle < repeat) {
     for (const frame of LOADING_FRAMES) {
-      process.stdout.write(`\r\x1b[K${frame}`);
+      stream.write(`\r\x1b[K${frame}`);
       await sleep(delayMs);
     }
     cycle += 1;
   }
-  process.stdout.write("\n");
+  stream.write("\n");
 }
 
 /**
- * Animate `text` by rotating its characters as a loading line on stdout.
+ * Animate `text` by rotating its characters as a loading line.
  *
  * @param text - Characters to rotate
  * @param repeat - Number of full cycles (default `2`). If `<= 0`, loops until interrupted
  * @param delayMs - Delay between frames in milliseconds (default `80`)
+ * @param options - Optional `stream` (default `process.stdout`)
  *
  * @example
  * ```ts
@@ -44,12 +53,14 @@ export async function linearLoading(
   text: string,
   repeat = 2,
   delayMs = 80,
+  options?: OutputOptions,
 ): Promise<void> {
   if (delayMs < 0) throw new RangeError("delayMs must be non-negative");
-  process.stdout.write("\n");
+  const stream = getOutputStream(options);
+  stream.write("\n");
   const chars = Array.from(text);
   if (chars.length === 0) {
-    process.stdout.write("\n");
+    stream.write("\n");
     return;
   }
 
@@ -58,10 +69,10 @@ export async function linearLoading(
     for (let offset = 0; offset < chars.length; offset += 1) {
       const frame =
         chars.slice(offset).join("") + chars.slice(0, offset).join("");
-      process.stdout.write(`\r\x1b[K${frame}`);
+      stream.write(`\r\x1b[K${frame}`);
       await sleep(delayMs);
     }
     cycle += 1;
   }
-  process.stdout.write("\n");
+  stream.write("\n");
 }
