@@ -23,12 +23,21 @@ export {
   type OutputOptions,
 } from "./logger.js";
 export { isLinux, isWindows } from "./system.js";
-export { linearLoading, simpleLoading } from "./loading.js";
+export {
+  linearLoading,
+  simpleLoading,
+  type LinearLoadingOptions,
+  type LoadingOptions,
+} from "./loading.js";
 export {
   createSpinner,
   runStep,
+  runStepLegacy,
+  TimeoutError,
+  type RunStepOptions,
   type Spinner,
   type SpinnerOptions,
+  type StepResult,
 } from "./spinner.js";
 export { runMenuByIndex, type MenuItem } from "./menu.js";
 export { showTable, showTableWithBorders, type TableOptions, type TableRow } from "./table.js";

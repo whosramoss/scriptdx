@@ -79,11 +79,30 @@ setColorEnabled(false);
 
 ### `simpleLoading(repeat?, delayMs?, options?): Promise<void>`
 
-Cycle frames `| / - \\`. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until interrupted externally. Optional `stream` defaults to `process.stdout`.
+### `simpleLoading(options?): Promise<void>`
+
+Cycle frames `| / - \\`. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until `signal` aborts. Abort resolves the promise and does not throw. The spinner line is cleared when the function returns. `stream` defaults to `process.stdout`.
+
+```ts
+await simpleLoading(2, 80);
+await simpleLoading({ repeat: 0, signal: controller.signal, stream });
+```
 
 ### `linearLoading(text, repeat?, delayMs?, options?): Promise<void>`
 
-Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`. Optional `stream` defaults to `process.stdout`.
+### `linearLoading(text, options?): Promise<void>`
+
+### `linearLoading(options): Promise<void>`
+
+Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`. `repeat <= 0` runs until `signal` aborts. The object form requires `text`. The animation line is cleared when the function returns.
+
+### `LoadingOptions`
+
+`{ repeat?: number; delayMs?: number; signal?: AbortSignal; stream?: WritableStream }`
+
+### `LinearLoadingOptions`
+
+`LoadingOptions & { text: string }`
 
 ---
 
@@ -106,9 +125,29 @@ Run the menu item at `selectedIndex`. Logs a warning if the index is invalid. Op
 
 ## Step & spinner
 
-### `runStep(task, message, options?): Promise<boolean>`
+### `runStep(task, message, options?): Promise<StepResult>`
 
-Run async `task` while showing a Braille spinner on **stderr**. On success: clears line and `logSuccess(message)`; returns `true`. On failure: `logError(message)`; returns `false`. When `options.stream` is set, both the spinner and the final log write to that stream.
+Run async `task` while showing a Braille spinner on **stderr**. On success: clears the line, calls `logSuccess(message)`, and returns `{ ok: true, durationMs }`. On failure: calls `logError(message)` and returns `{ ok: false, error, durationMs }` with the thrown value. A timeout calls `logWarning` and sets `error` to `TimeoutError`. When `options.stream` is set, both the spinner and the final log write to that stream.
+
+**Options:** `timeoutMs` (omit or `0` for no timeout), `timeoutMessage`, `showDuration` (default `false`), `stream`.
+
+`durationMs` is always present on the result. With `showDuration: true`, the success line becomes `✔ Building (3.2s)`. The label uses `250ms` under one second, `3.2s` under one minute, and `2m 15s` after that. A timeout still logs the timeout warning.
+
+### `runStepLegacy(task, message, options?): Promise<boolean>`
+
+Same behavior as `runStep`. Returns `result.ok`.
+
+### `StepResult`
+
+```ts
+type StepResult =
+  | { ok: true; durationMs: number }
+  | { ok: false; error: unknown; durationMs: number };
+```
+
+### `TimeoutError`
+
+`Error` thrown when `timeoutMs` elapses. `timeoutMs` is the configured limit. `name` is `"TimeoutError"`.
 
 ### `createSpinner(options?): Spinner`
 
@@ -151,7 +190,7 @@ Box-drawn table with dynamic column widths. Returns multi-line string.
 
 ### `hasTool(toolName): boolean`
 
-Heuristic check that `toolName` is non-empty and `PATH` has directories (does not execute the binary).
+Returns `true` when `toolName` is a bare executable name found on `PATH`. On Windows, `.exe`, `.cmd`, `.bat`, and `.ps1` are also checked. Paths are rejected. Does not execute the binary.
 
 ### `summarizeToolValidation(results): ToolValidationResult`
 
@@ -176,6 +215,10 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
+- `StepResult`
+- `RunStepOptions`
+- `TimeoutError`
 - `TableRow`
 - `TableOptions`
 - `ToolValidationResult`
+- `LoadingOptions`, `LinearLoadingOptions`
