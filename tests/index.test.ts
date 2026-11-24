@@ -234,19 +234,19 @@ describe("system", () => {
 });
 
 describe("loading", () => {
-  it("simpleLoading writes spinner frames and newline", async () => {
+  it("simpleLoading writes spinner frames and clears the line", async () => {
     const chunks: string[] = [];
 
     await simpleLoading(1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
-    expect(output).toContain("\n");
     expect(["|", "/", "-", "\\"].some((frame) => output.includes(frame))).toBe(
       true,
     );
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
   });
 
-  it("linearLoading rotates full text and ends line", async () => {
+  it("linearLoading rotates full text and clears the line", async () => {
     const chunks: string[] = [];
 
     await linearLoading("abc", 1, 0, { stream: mockStream(chunks) });
@@ -255,7 +255,60 @@ describe("loading", () => {
     expect(output).toContain("abc");
     expect(output).toContain("bca");
     expect(output).toContain("cab");
-    expect(output.endsWith("\n")).toBe(true);
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
+  });
+
+  it("accepts loading options and stops when the signal aborts", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+    const controller = new AbortController();
+
+    try {
+      const pending = simpleLoading({
+        repeat: 0,
+        delayMs: 20,
+        signal: controller.signal,
+        stream: mockStream(chunks),
+      });
+
+      await vi.advanceTimersByTimeAsync(40);
+      expect(chunks.length).toBeGreaterThan(0);
+
+      controller.abort();
+      await pending;
+
+      expect(chunks.at(-1)).toBe("\r\x1b[K");
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("resolves immediately when the signal is already aborted", async () => {
+    const chunks: string[] = [];
+    const controller = new AbortController();
+    controller.abort();
+
+    await simpleLoading(0, 50, {
+      signal: controller.signal,
+      stream: mockStream(chunks),
+    });
+
+    expect(chunks).toEqual(["\r\x1b[K"]);
+  });
+
+  it("linearLoading accepts text inside the options object", async () => {
+    const chunks: string[] = [];
+
+    await linearLoading({
+      text: "abc",
+      repeat: 1,
+      delayMs: 0,
+      stream: mockStream(chunks),
+    });
+
+    expect(chunks.join("")).toContain("bca");
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
   });
 
   it("simpleLoading rejects negative delayMs", async () => {

@@ -23,7 +23,12 @@ export {
   type OutputOptions,
 } from "./logger.js";
 export { isLinux, isWindows } from "./system.js";
-export { linearLoading, simpleLoading } from "./loading.js";
+export {
+  linearLoading,
+  simpleLoading,
+  type LinearLoadingOptions,
+  type LoadingOptions,
+} from "./loading.js";
 export {
   createSpinner,
   runStep,

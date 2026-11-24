@@ -79,11 +79,30 @@ setColorEnabled(false);
 
 ### `simpleLoading(repeat?, delayMs?, options?): Promise<void>`
 
-Cycle frames `| / - \\`. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until interrupted externally. Optional `stream` defaults to `process.stdout`.
+### `simpleLoading(options?): Promise<void>`
+
+Cycle frames `| / - \\`. Default `repeat = 2`, `delayMs = 80`. If `repeat <= 0`, loops until `signal` aborts. Abort resolves the promise and does not throw. The spinner line is cleared when the function returns. `stream` defaults to `process.stdout`.
+
+```ts
+await simpleLoading(2, 80);
+await simpleLoading({ repeat: 0, signal: controller.signal, stream });
+```
 
 ### `linearLoading(text, repeat?, delayMs?, options?): Promise<void>`
 
-Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`. Optional `stream` defaults to `process.stdout`.
+### `linearLoading(text, options?): Promise<void>`
+
+### `linearLoading(options): Promise<void>`
+
+Rotate characters of `text` as a loading line. Defaults: `repeat = 2`, `delayMs = 80`. `repeat <= 0` runs until `signal` aborts. The object form requires `text`. The animation line is cleared when the function returns.
+
+### `LoadingOptions`
+
+`{ repeat?: number; delayMs?: number; signal?: AbortSignal; stream?: WritableStream }`
+
+### `LinearLoadingOptions`
+
+`LoadingOptions & { text: string }`
 
 ---
 
@@ -188,3 +207,4 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `TableRow`
 - `TableOptions`
 - `ToolValidationResult`
+- `LoadingOptions`, `LinearLoadingOptions`
