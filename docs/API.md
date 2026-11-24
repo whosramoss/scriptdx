@@ -106,9 +106,17 @@ Run the menu item at `selectedIndex`. Logs a warning if the index is invalid. Op
 
 ## Step & spinner
 
-### `runStep(task, message, options?): Promise<boolean>`
+### `runStep(task, message, options?): Promise<StepResult>`
 
-Run async `task` while showing a Braille spinner on **stderr**. On success: clears line and `logSuccess(message)`; returns `true`. On failure: `logError(message)`; returns `false`. When `options.stream` is set, both the spinner and the final log write to that stream.
+Run async `task` while showing a Braille spinner on **stderr**. On success: clears the line, calls `logSuccess(message)`, and returns `{ ok: true }`. On failure: calls `logError(message)` and returns `{ ok: false, error }` with the thrown value. When `options.stream` is set, both the spinner and the final log write to that stream.
+
+### `StepResult`
+
+```ts
+type StepResult =
+  | { ok: true }
+  | { ok: false; error: unknown };
+```
 
 ### `createSpinner(options?): Spinner`
 
@@ -176,6 +184,7 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
+- `StepResult`
 - `TableRow`
 - `TableOptions`
 - `ToolValidationResult`

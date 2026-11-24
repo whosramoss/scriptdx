@@ -14,50 +14,52 @@ const SPINNER_FRAMES = [
   "⠏",
 ] as const;
 
+/** Outcome of {@link runStep}. `error` is present only when `ok` is `false`. */
+export type StepResult =
+  | { ok: true }
+  | { ok: false; error: unknown };
+
 /**
  * Run an async task with a Braille spinner on stderr.
- * Returns `true` on success, `false` on failure.
+ * The thrown value is returned on failure and is not rethrown.
  *
  * @param task - Async function to execute
  * @param message - Label shown during/after execution
  * @param options - Optional `stream`. Spinner defaults to `process.stderr`;
  *   success/error logs default to `process.stdout`. When `stream` is set, both
  *   the spinner and the final log use that stream.
- * @returns Whether the task completed without throwing
+ * @returns `{ ok: true }` when the task finishes, or `{ ok: false, error }` with the thrown value
  *
  * @example
  * ```ts
- * const ok = await runStep(async () => {
+ * const result = await runStep(async () => {
  *   await deploy();
  * }, "Deploying to production");
+ *
+ * if (!result.ok) {
+ *   console.error(result.error);
+ * }
  * ```
  */
 export async function runStep(
   task: () => Promise<void>,
   message: string,
   options?: OutputOptions,
-): Promise<boolean> {
-  let frame = 0;
+): Promise<StepResult> {
   const spinnerStream = getOutputStream(options, process.stderr);
   const logOptions: OutputOptions = { stream: getOutputStream(options) };
-  const timer = setInterval(() => {
-    spinnerStream.write(
-      `\r${SPINNER_FRAMES[frame % SPINNER_FRAMES.length]} ${message}`,
-    );
-    frame += 1;
-  }, 80);
+  const spinner = createSpinner({ stream: spinnerStream });
+  spinner.start(message);
 
   try {
     await task();
-    clearInterval(timer);
-    spinnerStream.write("\r\x1b[K");
+    spinner.stop();
     logSuccess(message, logOptions);
-    return true;
-  } catch {
-    clearInterval(timer);
-    spinnerStream.write("\r\x1b[K");
+    return { ok: true };
+  } catch (error: unknown) {
+    spinner.stop();
     logError(message, logOptions);
-    return false;
+    return { ok: false, error };
   }
 }
 

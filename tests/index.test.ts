@@ -343,25 +343,26 @@ describe("menu and step", () => {
     expect(chunks.join("")).toContain("Invalid menu index");
   });
 
-  it("runStep returns true when task succeeds", async () => {
+  it("runStep returns ok when task succeeds", async () => {
     const chunks: string[] = [];
 
     const result = await runStep(async () => Promise.resolve(), "step ok", {
       stream: mockStream(chunks),
     });
-    expect(result).toBe(true);
+    expect(result).toEqual({ ok: true });
     expect(chunks.join("")).toContain("step ok");
   });
 
-  it("runStep returns false when task fails", async () => {
+  it("runStep returns the thrown value when task fails", async () => {
     const chunks: string[] = [];
+    const failure = new Error("fail");
 
     const result = await runStep(
-      async () => Promise.reject(new Error("fail")),
+      async () => Promise.reject(failure),
       "step fail",
       { stream: mockStream(chunks) },
     );
-    expect(result).toBe(false);
+    expect(result).toEqual({ ok: false, error: failure });
     expect(chunks.join("")).toContain("step fail");
   });
 });

@@ -29,6 +29,7 @@ export {
   runStep,
   type Spinner,
   type SpinnerOptions,
+  type StepResult,
 } from "./spinner.js";
 export { runMenuByIndex, type MenuItem } from "./menu.js";
 export { showTable, showTableWithBorders, type TableOptions, type TableRow } from "./table.js";
