@@ -127,15 +127,25 @@ Run the menu item at `selectedIndex`. Logs a warning if the index is invalid. Op
 
 ### `runStep(task, message, options?): Promise<StepResult>`
 
-Run async `task` while showing a Braille spinner on **stderr**. On success: clears the line, calls `logSuccess(message)`, and returns `{ ok: true }`. On failure: calls `logError(message)` and returns `{ ok: false, error }` with the thrown value. When `options.stream` is set, both the spinner and the final log write to that stream.
+Run async `task` while showing a Braille spinner on **stderr**. On success: clears the line, calls `logSuccess(message)`, and returns `{ ok: true, durationMs }`. On failure: calls `logError(message)` and returns `{ ok: false, error, durationMs }` with the thrown value. A timeout calls `logWarning` and sets `error` to `TimeoutError`. When `options.stream` is set, both the spinner and the final log write to that stream.
+
+**Options:** `timeoutMs` (omit or `0` for no timeout), `timeoutMessage`, `showDuration` (default `false`), `stream`.
+
+### `runStepLegacy(task, message, options?): Promise<boolean>`
+
+Same behavior as `runStep`. Returns `result.ok`.
 
 ### `StepResult`
 
 ```ts
 type StepResult =
-  | { ok: true }
-  | { ok: false; error: unknown };
+  | { ok: true; durationMs: number }
+  | { ok: false; error: unknown; durationMs: number };
 ```
+
+### `TimeoutError`
+
+`Error` thrown when `timeoutMs` elapses. `timeoutMs` is the configured limit. `name` is `"TimeoutError"`.
 
 ### `createSpinner(options?): Spinner`
 
@@ -204,6 +214,8 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
 - `StepResult`
+- `RunStepOptions`
+- `TimeoutError`
 - `TableRow`
 - `TableOptions`
 - `ToolValidationResult`

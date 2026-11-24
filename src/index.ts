@@ -32,6 +32,9 @@ export {
 export {
   createSpinner,
   runStep,
+  runStepLegacy,
+  TimeoutError,
+  type RunStepOptions,
   type Spinner,
   type SpinnerOptions,
   type StepResult,

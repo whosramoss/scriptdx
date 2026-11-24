@@ -25,6 +25,7 @@ import {
   logTopic,
   runMenuByIndex,
   runStep,
+  runStepLegacy,
   setColorEnabled,
   showScriptTitle,
   showTable,
@@ -33,6 +34,7 @@ import {
   styles,
   success,
   summarizeToolValidation,
+  TimeoutError,
   warning,
 } from "../src/index.js";
 import { getOutputStream } from "../src/output.js";
@@ -402,7 +404,8 @@ describe("menu and step", () => {
     const result = await runStep(async () => Promise.resolve(), "step ok", {
       stream: mockStream(chunks),
     });
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(true);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(chunks.join("")).toContain("step ok");
   });
 
@@ -415,8 +418,111 @@ describe("menu and step", () => {
       "step fail",
       { stream: mockStream(chunks) },
     );
-    expect(result).toEqual({ ok: false, error: failure });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe(failure);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(chunks.join("")).toContain("step fail");
+  });
+
+  it("runStep returns TimeoutError when the task exceeds timeoutMs", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+
+    try {
+      const pending = runStep(() => new Promise(() => undefined), "slow step", {
+        timeoutMs: 1000,
+        stream: mockStream(chunks),
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+      const result = await pending;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(TimeoutError);
+        expect(result.error).toMatchObject({
+          message: "slow step (timed out after 1000ms)",
+          timeoutMs: 1000,
+        });
+      }
+      expect(chunks.join("")).toContain("slow step (timed out after 1000ms)");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("runStep uses timeoutMessage and ignores a later task rejection", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+    let rejectTask: (error: unknown) => void = () => undefined;
+
+    try {
+      const pending = runStep(
+        () =>
+          new Promise<void>((_, reject) => {
+            rejectTask = reject;
+          }),
+        "deploy",
+        {
+          timeoutMs: 30,
+          timeoutMessage: "Deploy timed out - check network connection",
+          stream: mockStream(chunks),
+        },
+      );
+      await vi.advanceTimersByTimeAsync(30);
+      const result = await pending;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toMatchObject({
+          message: "Deploy timed out - check network connection",
+        });
+      }
+      rejectTask(new Error("late"));
+      await Promise.resolve();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("runStep appends a formatted duration when showDuration is set", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+
+    try {
+      const pending = runStep(
+        () => new Promise((resolve) => setTimeout(resolve, 1500)),
+        "step ok",
+        { showDuration: true, stream: mockStream(chunks) },
+      );
+      await vi.advanceTimersByTimeAsync(1500);
+      const result = await pending;
+
+      expect(result.durationMs).toBe(1500);
+      expect(chunks.join("")).toContain("step ok (1.5s)");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("runStep rejects a negative timeoutMs", async () => {
+    await expect(
+      runStep(async () => Promise.resolve(), "step", { timeoutMs: -1 }),
+    ).rejects.toThrow(RangeError);
+  });
+
+  it("runStepLegacy returns a boolean", async () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    await expect(
+      runStepLegacy(async () => Promise.resolve(), "legacy ok", { stream }),
+    ).resolves.toBe(true);
+    await expect(
+      runStepLegacy(async () => Promise.reject(new Error("x")), "legacy fail", {
+        stream,
+      }),
+    ).resolves.toBe(false);
   });
 });
 
