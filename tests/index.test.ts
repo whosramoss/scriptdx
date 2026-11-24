@@ -1,3 +1,6 @@
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   afterEach,
   beforeEach,
@@ -496,8 +499,60 @@ describe("validations", () => {
     expect(summary.fail).toEqual(["docker"]);
   });
 
-  it("hasTool returns false for empty tool name", () => {
+  it("returns true for installed tools", () => {
+    expect(hasTool("node")).toBe(true);
+  });
+
+  it("returns false for non-existent tools", () => {
+    expect(hasTool("definitely-not-a-real-tool-12345")).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
     expect(hasTool("")).toBe(false);
+    expect(hasTool("   ")).toBe(false);
+  });
+
+  it("rejects paths and parent segments", () => {
+    expect(hasTool("/usr/bin/node")).toBe(false);
+    expect(hasTool("./node")).toBe(false);
+    expect(hasTool("..")).toBe(false);
+    expect(hasTool(".")).toBe(false);
+  });
+
+  it("resolves an executable placed on PATH and ignores directories", () => {
+    const dir = mkdtempSync(join(tmpdir(), "scriptdx-hastool-"));
+
+    try {
+      const fileName = process.platform === "win32" ? "scriptdx-fixture.cmd" : "scriptdx-fixture";
+      const filePath = join(dir, fileName);
+      writeFileSync(filePath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n");
+      if (process.platform !== "win32") chmodSync(filePath, 0o755);
+      mkdirSync(join(dir, "scriptdx-directory"));
+      process.env.PATH = dir;
+
+      expect(hasTool("scriptdx-fixture")).toBe(true);
+      expect(hasTool("scriptdx-directory")).toBe(false);
+      expect(hasTool("scriptdx-missing")).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform !== "win32")("finds Windows executables by extension", () => {
+    const dir = mkdtempSync(join(tmpdir(), "scriptdx-hastool-win-"));
+
+    try {
+      process.env.PATH = dir;
+
+      for (const ext of [".exe", ".cmd", ".bat", ".ps1"]) {
+        const base = `scriptdx-fixture-${ext.slice(1)}`;
+        writeFileSync(join(dir, base + ext), "");
+        expect(hasTool(base)).toBe(true);
+        expect(hasTool(base + ext)).toBe(true);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

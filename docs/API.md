@@ -151,7 +151,7 @@ Box-drawn table with dynamic column widths. Returns multi-line string.
 
 ### `hasTool(toolName): boolean`
 
-Heuristic check that `toolName` is non-empty and `PATH` has directories (does not execute the binary).
+Returns `true` when `toolName` is a bare executable name found on `PATH`. On Windows, `.exe`, `.cmd`, `.bat`, and `.ps1` are also checked. Paths are rejected. Does not execute the binary.
 
 ### `summarizeToolValidation(results): ToolValidationResult`
 
