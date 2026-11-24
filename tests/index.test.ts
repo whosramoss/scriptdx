@@ -406,7 +406,9 @@ describe("menu and step", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
-    expect(chunks.join("")).toContain("step ok");
+    const output = chunks.join("");
+    expect(output).toContain("step ok");
+    expect(output).not.toMatch(/step ok \(/);
   });
 
   it("runStep returns the thrown value when task fails", async () => {
@@ -485,21 +487,51 @@ describe("menu and step", () => {
     }
   });
 
-  it("runStep appends a formatted duration when showDuration is set", async () => {
+  it.each([
+    [250, "250ms"],
+    [3200, "3.2s"],
+    [135000, "2m 15s"],
+  ] as const)(
+    "runStep shows %ims as %s when showDuration is set",
+    async (delayMs, formatted) => {
+      vi.useFakeTimers();
+      const chunks: string[] = [];
+
+      try {
+        const pending = runStep(
+          () => new Promise((resolve) => setTimeout(resolve, delayMs)),
+          "Building",
+          { showDuration: true, stream: mockStream(chunks) },
+        );
+        await vi.advanceTimersByTimeAsync(delayMs);
+        const result = await pending;
+
+        expect(result.durationMs).toBe(delayMs);
+        expect(chunks.join("")).toContain(`Building (${formatted})`);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("runStep keeps the timeout warning when showDuration is set", async () => {
     vi.useFakeTimers();
     const chunks: string[] = [];
 
     try {
-      const pending = runStep(
-        () => new Promise((resolve) => setTimeout(resolve, 1500)),
-        "step ok",
-        { showDuration: true, stream: mockStream(chunks) },
-      );
-      await vi.advanceTimersByTimeAsync(1500);
+      const pending = runStep(() => new Promise(() => undefined), "Processing", {
+        timeoutMs: 10000,
+        showDuration: true,
+        stream: mockStream(chunks),
+      });
+      await vi.advanceTimersByTimeAsync(10000);
       const result = await pending;
 
-      expect(result.durationMs).toBe(1500);
-      expect(chunks.join("")).toContain("step ok (1.5s)");
+      expect(result.ok).toBe(false);
+      expect(result.durationMs).toBe(10000);
+      const output = chunks.join("");
+      expect(output).toContain("Processing (timed out after 10000ms)");
+      expect(output).not.toContain("Processing (10.0s)");
     } finally {
       vi.useRealTimers();
     }

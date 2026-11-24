@@ -25,7 +25,11 @@ export type RunStepOptions = OutputOptions & {
   timeoutMs?: number;
   /** Message shown on timeout. Default: `"{message} (timed out after {timeoutMs}ms)"`. */
   timeoutMessage?: string;
-  /** Append a formatted duration to the success line. Default `false`. */
+  /**
+   * Append a formatted duration to the success line.
+   * Under 1s: `250ms`. Under 1min: `3.2s`. Otherwise: `2m 15s`.
+   * Default `false`. Timeouts keep the timeout warning.
+   */
   showDuration?: boolean;
 };
 

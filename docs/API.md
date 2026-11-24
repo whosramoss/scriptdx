@@ -131,6 +131,8 @@ Run async `task` while showing a Braille spinner on **stderr**. On success: clea
 
 **Options:** `timeoutMs` (omit or `0` for no timeout), `timeoutMessage`, `showDuration` (default `false`), `stream`.
 
+`durationMs` is always present on the result. With `showDuration: true`, the success line becomes `✔ Building (3.2s)`. The label uses `250ms` under one second, `3.2s` under one minute, and `2m 15s` after that. A timeout still logs the timeout warning.
+
 ### `runStepLegacy(task, message, options?): Promise<boolean>`
 
 Same behavior as `runStep`. Returns `result.ok`.
