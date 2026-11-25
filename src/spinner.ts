@@ -1,18 +1,7 @@
+import { ansi, styles, type LoggerColor } from "./colors.js";
 import { logError, logSuccess, logWarning } from "./logger.js";
 import { getOutputStream, type OutputOptions } from "./output.js";
-
-const SPINNER_FRAMES = [
-  "⠋",
-  "⠙",
-  "⠹",
-  "⠸",
-  "⠼",
-  "⠴",
-  "⠦",
-  "⠧",
-  "⠇",
-  "⠏",
-] as const;
+import { spinnerPresets, type SpinnerPreset } from "./spinner-frames.js";
 
 /** Outcome of {@link runStep}. `error` is present only when `ok` is `false`. */
 export type StepResult =
@@ -31,6 +20,10 @@ export type RunStepOptions = OutputOptions & {
    * Default `false`. Timeouts keep the timeout warning.
    */
   showDuration?: boolean;
+  /** Spinner preset or custom frames. Default `"dots"`. */
+  spinnerFrames?: SpinnerPreset | readonly string[];
+  /** Color applied to the spinner frames. */
+  spinnerColor?: LoggerColor;
 };
 
 /** Thrown by {@link runStep} when `timeoutMs` elapses before the task settles. */
@@ -131,7 +124,11 @@ export async function runStep(
 
   const spinnerStream = getOutputStream(options, process.stderr);
   const logOptions: OutputOptions = { stream: getOutputStream(options) };
-  const spinner = createSpinner({ stream: spinnerStream });
+  const spinner = createSpinner({
+    stream: spinnerStream,
+    frames: options.spinnerFrames,
+    color: options.spinnerColor,
+  });
   const startedAt = Date.now();
   spinner.start(message);
 
@@ -194,6 +191,10 @@ export type Spinner = {
 export type SpinnerOptions = OutputOptions & {
   /** Frame interval in milliseconds (default `80`). */
   intervalMs?: number;
+  /** Preset name or custom frames. Default `"dots"`. */
+  frames?: SpinnerPreset | readonly string[];
+  /** Color applied to each frame. */
+  color?: LoggerColor;
 };
 
 /**
@@ -213,13 +214,17 @@ export type SpinnerOptions = OutputOptions & {
 export function createSpinner(options: SpinnerOptions = {}): Spinner {
   const intervalMs = options.intervalMs ?? 80;
   const stream = getOutputStream(options, process.stderr);
+  const resolved = typeof options.frames === "string" ? spinnerPresets[options.frames] : options.frames;
+  const frames = resolved !== undefined && resolved.length > 0 ? resolved : spinnerPresets.dots;
+  const color = options.color;
   let timer: ReturnType<typeof setInterval> | undefined;
   let frame = 0;
   let label = "";
 
   const tick = (): void => {
-    const f = SPINNER_FRAMES[frame % SPINNER_FRAMES.length] ?? "";
-    stream.write(`\r${f} ${label}`);
+    const current = frames[frame % frames.length] ?? "";
+    const painted = color ? ansi(styles[color], current) : current;
+    stream.write(`\r${painted} ${label}`);
     frame += 1;
   };
 

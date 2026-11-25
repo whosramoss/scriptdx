@@ -96,6 +96,7 @@ export {
   type RetryOptions,
   type RetryResult,
 } from "./retry.js";
+export { getSpinnerFrames, spinnerPresets, type SpinnerPreset } from "./spinner-frames.js";
 export {
   hasTool,
   summarizeToolValidation,
