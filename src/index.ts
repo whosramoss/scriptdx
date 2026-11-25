@@ -88,6 +88,15 @@ export {
   type DiffResult,
 } from "./diff.js";
 export {
+  retry,
+  retryAsync,
+  retryFixed,
+  retryLinear,
+  withRetry,
+  type RetryOptions,
+  type RetryResult,
+} from "./retry.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
