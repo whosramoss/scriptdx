@@ -59,7 +59,13 @@ export {
   type StepResult,
 } from "./spinner.js";
 export { runMenuByIndex, type MenuItem } from "./menu.js";
-export { showTable, showTableWithBorders, type TableOptions, type TableRow } from "./table.js";
+export {
+  createTableBuilder,
+  showTable,
+  showTableWithBorders,
+  type TableOptions,
+  type TableRow,
+} from "./table.js";
 export {
   hasTool,
   summarizeToolValidation,
