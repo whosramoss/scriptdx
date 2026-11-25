@@ -18,7 +18,6 @@ import {
   logWarning,
   runMenuByIndex,
   runStep,
-  showScriptTitle,
   showTable,
   showTableWithBorders,
   styles,
@@ -26,6 +25,7 @@ import {
   summarizeToolValidation,
   warning,
 } from "../src/index";
+import { showScriptTitle } from "../src/font/index";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 

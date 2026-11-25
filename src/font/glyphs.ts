@@ -6,6 +6,10 @@ let fontMap: Record<string, string[]> | undefined;
  * Glyph table used by `showScriptTitle`.
  * Built on first call so importing the library does not allocate the map.
  */
+export function isFontMapAllocated(): boolean {
+  return fontMap !== undefined;
+}
+
 export function getFontMap(): Record<string, string[]> {
   if (fontMap === undefined) {
     fontMap = {

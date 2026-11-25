@@ -46,4 +46,3 @@ export {
   summarizeToolValidation,
   type ToolValidationResult,
 } from "./validations.js";
-export { showScriptTitle } from "./font/index.js";

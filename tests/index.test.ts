@@ -27,7 +27,6 @@ import {
   runStep,
   runStepLegacy,
   setColorEnabled,
-  showScriptTitle,
   showTable,
   showTableWithBorders,
   simpleLoading,
@@ -749,14 +748,16 @@ describe("validations", () => {
 });
 
 describe("font", () => {
-  it("showScriptTitle renders multi-line ASCII", () => {
+  it("showScriptTitle renders multi-line ASCII", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("Ab");
     const lines = title.split("\n");
     expect(lines.length).toBe(10);
     expect(title.length).toBeGreaterThan(0);
   });
 
-  it("showScriptTitle fallback for unmapped characters", () => {
+  it("showScriptTitle fallback for unmapped characters", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("@!");
     const lines = title.split("\n");
 
@@ -767,13 +768,18 @@ describe("font", () => {
     }
   });
 
-  it("is available from the font entry module", async () => {
+  it("keeps the glyph map out of the main entry until the first title", async () => {
+    vi.resetModules();
+    const main = await import("../src/index.js");
+    const glyphs = await import("../src/font/glyphs.js");
     const font = await import("../src/font/index.js");
-    expect(font.showScriptTitle("Ab")).toBe(showScriptTitle("Ab"));
-  });
 
-  it("allocates the glyph map once and reuses it", async () => {
-    const { getFontMap } = await import("../src/font/glyphs.js");
-    expect(getFontMap()).toBe(getFontMap());
+    expect(main).not.toHaveProperty("showScriptTitle");
+    expect(glyphs.isFontMapAllocated()).toBe(false);
+
+    font.showScriptTitle("A");
+
+    expect(glyphs.isFontMapAllocated()).toBe(true);
+    expect(glyphs.getFontMap()).toBe(glyphs.getFontMap());
   });
 });

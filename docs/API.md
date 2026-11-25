@@ -200,7 +200,7 @@ Split a `Record<string, boolean>` into `{ ok: string[], fail: string[] }`.
 
 ## Font
 
-Prefer `import { showScriptTitle } from "scriptdx/font"` so the glyph map is not part of the main entry graph. `showScriptTitle` remains available from `scriptdx` for compatibility; the map is allocated on first call either way.
+Import `showScriptTitle` from `scriptdx/font`. The main `scriptdx` entry does not load the glyph module. The map is allocated on the first call.
 
 ### `showScriptTitle(word): string`
 

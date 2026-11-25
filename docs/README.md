@@ -170,7 +170,7 @@ process.stdout.write(`${color.red("fail")}: ${summary.fail.join(", ")}\n`);
 ### Font
 
 ```ts
-import { showScriptTitle } from "../src/index";
+import { showScriptTitle } from "../src/font/index";
 
 process.stdout.write(`${showScriptTitle("SCRIPTDX")}\n`);
 ```
