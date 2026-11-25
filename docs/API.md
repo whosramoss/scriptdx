@@ -179,7 +179,7 @@ Manual spinner control.
 
 ### `showTable(header, rows, options?): string`
 
-Aligned columns. Default width is **24** chars per column (backward-compatible). Pass `{ columnWidth: "auto" }` to size each column to its content, optionally with `minWidth`. Returns a multi-line string (does not print).
+Aligned columns. Default width is **24** chars per column (backward-compatible). Pass `{ columnWidth: "auto" }` to size each column to its content, optionally with `minWidth`. `maxWidth` truncates cells, `wrap` breaks them onto extra lines, and `maxRows` appends `... and N more rows`. `headerStyle` can be `"uppercase"`, `"capitalize"`, or `"none"`. Returns a multi-line string (does not print).
 
 ```ts
 showTable(["ID", "Name"], data, { columnWidth: "auto", minWidth: 10 });
@@ -195,7 +195,11 @@ Box-drawn table with dynamic column widths. Returns multi-line string.
 
 ### `TableOptions`
 
-`{ columnWidth?: number | "auto"; minWidth?: number }`
+`{ columnWidth?: number | "auto" | number[]; minWidth?: number; maxWidth?: number; ellipsis?: string; wrap?: boolean; maxRows?: number; headerStyle?: "uppercase" | "capitalize" | "none" }`
+
+### `createTableBuilder(defaultOptions?)`
+
+Returns `{ compact, full, paginated }`. `compact` uses auto width and `maxWidth: 30`. `full` wraps. `paginated(header, rows, page, pageSize = 10)` appends a page footer.
 
 ---
 
@@ -227,9 +231,55 @@ truncate("This is a very long message", 15); // "This is a very…"
 
 Import `showScriptTitle` from `scriptdx/font`. The main `scriptdx` entry does not load the glyph module. The map is allocated on the first call.
 
-### `showScriptTitle(word): string`
+### `showScriptTitle(text, options?): string`
 
-Render `word` as large block-letter ASCII art (built-in glyph map). Returns multi-line string.
+Render `text` as ASCII art. `options.font` is `"standard"` (10-line glyph map, loaded on first use), `"banner"` (5-line compact font), or `"slant"` (the banner glyphs shifted one column per row). `color`, `align` (`"left" | "center" | "right"`), `border`, `borderStyle`, `padding`, and `maxWidth` are optional.
+
+### `getAvailableFonts(): FontName[]`
+
+Returns `["standard", "banner", "slant"]`.
+
+### `printTitle(text, options?): void`
+
+Prints `showScriptTitle` to stdout.
+
+---
+
+## Format
+
+`formatBytes(bytes, options?)` uses decimal units by default (`1000`) and binary units when `binary: true`. `formatNumber` abbreviates with K/M/B. `formatDuration` spells units by default and uses `1m 30s` when `compact: true`. `formatPercent(0.755)` returns `"75.5%"`. `formatRelativeTime(date, { now })` returns strings such as `"1 minute ago"`.
+
+## Diff
+
+`diff(oldText, newText)` returns `{ lines, additions, deletions, hasChanges }`. `formatDiff` colors the hunks. `showDiff` writes a unified header to `stdout` unless `{ stream }` or `header: "none"` is set. `inlineDiff` highlights the changed middle of one line.
+
+## Retry
+
+`retry(fn, options?)` returns `{ ok: true, value, attempts, totalTime }` or `{ ok: false, error, attempts, totalTime, errors }`. It does not throw. `retryAsync` throws the last error. `withRetry` wraps a function. `retryLinear` and `retryFixed` keep a constant delay. Set `jitter: false` in tests.
+
+## Spinner frames
+
+`spinnerPresets` and `getSpinnerFrames(preset)` expose `dots`, `line`, `arrow`, `ascii`, and the other named sets. `createSpinner({ frames, color })` accepts a preset name or a custom array. `runStep` accepts `spinnerFrames` and `spinnerColor`.
+
+## Box
+
+`box(text, options?)` draws a border. Presets: `info`, `success`, `warning`, `error`, `default`. `banner` is full width. `callout(text, type?)` uses rounded corners. `separator()` draws a horizontal rule. `printBox` writes to stdout.
+
+## Tree
+
+`showTree(node, options?)` renders `├──` guides (`ascii: true` switches to `|---`). `treeFromPaths(paths)` and `treeFromObject(obj, name?)` build nodes. `printTree` writes to stdout.
+
+## JSON
+
+`highlightJson(value, options?)` colorizes a pretty-printed value. `compactJson` stays on one line. `parseJsonSafe` returns `{ ok: true, value }` or `{ ok: false, error, position? }`. `printJson` writes to stdout.
+
+## Gradient
+
+`gradient(text, colors, options?)` paints truecolor stops. It returns plain text when color is disabled. `gradientPresets` and `applyGradient(text, preset)` cover `rainbow`, `ocean`, `sunset`, and the other named sets. `gradientBanner` adds a one-line frame. `animateGradient` shifts the stops on stdout.
+
+## Links
+
+`supportsHyperlinks()` checks `TERM_PROGRAM`, `WT_SESSION`, `KONSOLE_VERSION`, and `COLORTERM=truecolor`. `link(text, url, options?)` emits OSC 8 when that check passes, otherwise `"label (url)"`. `mailto`, `fileLink`, `linkify`, `linkList`, `breadcrumb`, and `printLink` build on the same helper.
 
 ---
 
@@ -246,6 +296,15 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `TimeoutError`
 - `TableRow`
 - `TableOptions`
+- `ByteFormatOptions`, `NumberFormatOptions`, `DurationFormatOptions`, `PercentFormatOptions`, `RelativeTimeOptions`
+- `DiffLine`, `DiffResult`, `DiffOptions`
+- `RetryOptions`, `RetryResult`
+- `SpinnerPreset`
+- `BoxStyle`, `BoxPreset`, `BoxOptions`
+- `TreeNode`, `TreeOptions`
+- `JsonHighlightOptions`
+- `GradientColor`, `GradientOptions`, `GradientPreset`
+- `LinkOptions`
 - `ToolValidationResult`
 - `LoadingOptions`, `LinearLoadingOptions`
 - `Platform`

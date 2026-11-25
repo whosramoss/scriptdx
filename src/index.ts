@@ -133,6 +133,17 @@ export {
   type GradientPreset,
 } from "./gradient.js";
 export {
+  breadcrumb,
+  fileLink,
+  link,
+  linkList,
+  linkify,
+  mailto,
+  printLink,
+  supportsHyperlinks,
+  type LinkOptions,
+} from "./link.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
