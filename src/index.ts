@@ -123,6 +123,16 @@ export {
   type JsonHighlightOptions,
 } from "./json.js";
 export {
+  animateGradient,
+  applyGradient,
+  gradient,
+  gradientBanner,
+  gradientPresets,
+  type GradientColor,
+  type GradientOptions,
+  type GradientPreset,
+} from "./gradient.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
