@@ -40,7 +40,12 @@ Record of ANSI SGR codes: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `
 
 ### `color`
 
-Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant. ANSI sequences are omitted when color is disabled.
+Object of chainable color functions: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, plus `gray` and `brightRed`, `brightGreen`, `brightYellow`, `brightBlue`, `brightMagenta`, `brightCyan`, `brightWhite`. Each returns a string. Modifiers chain in call order: `.bold`, `.dim`, `.italic`, `.underline`, `.strikethrough`, `.inverse`. ANSI sequences are omitted when color is disabled.
+
+```ts
+color.red.bold.underline("error");
+color.brightCyan("ok");
+```
 
 ### `isColorEnabled()` / `setColorEnabled(enabled)`
 
@@ -219,7 +224,8 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 ## Types exported
 
 - `LoggerColor` — keyof `styles`
-- `ColorChain` — color function with `.bold`
+- `ColorChain` — color function with chainable style modifiers
+- `Modifier` — keyof `modifiers`
 - `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`

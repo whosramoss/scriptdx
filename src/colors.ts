@@ -86,34 +86,81 @@ export const styles = {
 /** Valid color key accepted by `logColor` and related helpers. */
 export type LoggerColor = keyof typeof styles;
 
-function paint(code: number, bold: boolean, text: string): string {
-  const value = bold ? `1;${code}` : String(code);
-  return ansi(value, text);
-}
+/** ANSI SGR codes for text styling. */
+export const modifiers = {
+  bold: "1",
+  dim: "2",
+  italic: "3",
+  underline: "4",
+  blink: "5",
+  inverse: "7",
+  hidden: "8",
+  strikethrough: "9",
+} as const;
+
+/** Style name accepted by a {@link ColorChain}. */
+export type Modifier = keyof typeof modifiers;
 
 type ColorFn = (text: string) => string;
 
+const chainModifiers = [
+  "bold",
+  "dim",
+  "italic",
+  "underline",
+  "strikethrough",
+  "inverse",
+] as const satisfies readonly Modifier[];
+
 /**
- * Callable color function that also exposes a `.bold` variant.
+ * Callable color function with lazy style modifiers.
+ * Each modifier returns another chain, so styles combine in call order.
  *
  * @example
  * ```ts
  * color.red("error");
- * color.green.bold("ok");
+ * color.red.bold("error");
+ * color.red.bold.underline("error");
+ * color.cyan.italic.dim("subtle");
  * ```
  */
-export type ColorChain = ColorFn & { readonly bold: ColorFn };
+export type ColorChain = ColorFn & {
+  readonly bold: ColorChain;
+  readonly dim: ColorChain;
+  readonly italic: ColorChain;
+  readonly underline: ColorChain;
+  readonly strikethrough: ColorChain;
+  readonly inverse: ColorChain;
+};
+
+function buildColorFn(colorCode: number, activeModifiers: readonly string[]): ColorChain {
+  const apply: ColorFn = (text: string): string => {
+    const codes = [...activeModifiers, String(colorCode)].join(";");
+    return ansi(codes, text);
+  };
+  const chain = apply as ColorChain;
+
+  for (const name of chainModifiers) {
+    Object.defineProperty(chain, name, {
+      enumerable: true,
+      get(): ColorChain {
+        return buildColorFn(colorCode, [...activeModifiers, modifiers[name]]);
+      },
+    });
+  }
+
+  return chain;
+}
 
 function makeColor(code: number): ColorChain {
-  const boldFn: ColorFn = (text: string): string => paint(code, true, text);
-  const plain: ColorFn = (text: string): string => paint(code, false, text);
-  return Object.assign(plain, { bold: boldFn });
+  return buildColorFn(code, []);
 }
 
 /**
  * Chainable ANSI color helpers for inline string styling.
  *
- * Each entry is a function `(text) => string` with a `.bold` variant.
+ * Each entry is a function `(text) => string` with chainable modifiers
+ * (`.bold`, `.dim`, `.italic`, `.underline`, `.strikethrough`, `.inverse`).
  * Sequences are omitted when {@link isColorEnabled} is `false`.
  *
  * @example
@@ -130,4 +177,12 @@ export const color = {
   magenta: makeColor(35),
   cyan: makeColor(36),
   white: makeColor(37),
+  gray: makeColor(90),
+  brightRed: makeColor(91),
+  brightGreen: makeColor(92),
+  brightYellow: makeColor(93),
+  brightBlue: makeColor(94),
+  brightMagenta: makeColor(95),
+  brightCyan: makeColor(96),
+  brightWhite: makeColor(97),
 } as const;

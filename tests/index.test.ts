@@ -66,6 +66,10 @@ describe("logger and colors", () => {
   it("color helpers include ANSI sequences", () => {
     expect(color.cyan("x")).toContain("\u001b[36m");
     expect(color.cyan.bold("x")).toContain("\u001b[1;36m");
+    expect(color.red.bold.underline("x")).toContain("\u001b[1;4;31m");
+    expect(color.cyan.italic.dim("x")).toContain("\u001b[3;2;36m");
+    expect(color.brightCyan("x")).toContain("\u001b[96m");
+    expect(color.gray.strikethrough("x")).toContain("\u001b[9;90m");
     expect(styles.lightGreen).toBe("1;32");
   });
 
@@ -73,6 +77,8 @@ describe("logger and colors", () => {
     setColorEnabled(false);
     expect(color.cyan("x")).toBe("x");
     expect(color.cyan.bold("x")).toBe("x");
+    expect(color.red.bold.underline("x")).toBe("x");
+    expect(color.brightGreen("x")).toBe("x");
   });
 
   it("logger aliases write to the given stream", () => {

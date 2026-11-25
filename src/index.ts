@@ -1,10 +1,12 @@
 export {
   color,
   isColorEnabled,
+  modifiers,
   setColorEnabled,
   styles,
   type ColorChain,
   type LoggerColor,
+  type Modifier,
 } from "./colors.js";
 export {
   debug,
