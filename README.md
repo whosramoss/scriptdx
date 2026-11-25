@@ -79,5 +79,5 @@ See **[docs/README.md](https://github.com/whosramoss/scriptdx/blob/main/docs/REA
 | **Table**       | `showTable`, `showTableWithBorders` for aligned terminal tables          |
 | **Menu**        | `runMenuByIndex` for numbered CLI menus                                  |
 | **Validations** | `hasTool`, `summarizeToolValidation` for dependency checks               |
-| **System**      | `isLinux`, `isWindows`                                                   |
+| **System**      | `isLinux`, `isWindows`, `isMac`, `getPlatform`                           |
 | **Font**        | `showScriptTitle` via `scriptdx/font` — large ASCII banner text           |

@@ -17,7 +17,10 @@ import {
   hasTool,
   info,
   isColorEnabled,
+  getPlatform,
+  isDarwin,
   isLinux,
+  isMac,
   isWindows,
   linearLoading,
   logColor,
@@ -228,9 +231,21 @@ describe("getOutputStream", () => {
 });
 
 describe("system", () => {
-  it("isLinux/isWindows reflect current runtime", () => {
+  it("platform helpers reflect the current runtime", () => {
     expect(isLinux()).toBe(process.platform === "linux");
     expect(isWindows()).toBe(process.platform === "win32");
+    expect(isMac()).toBe(process.platform === "darwin");
+    expect(isDarwin()).toBe(isMac());
+
+    const expected =
+      process.platform === "win32"
+        ? "windows"
+        : process.platform === "linux"
+          ? "linux"
+          : process.platform === "darwin"
+            ? "mac"
+            : "unknown";
+    expect(getPlatform()).toBe(expected);
   });
 });
 

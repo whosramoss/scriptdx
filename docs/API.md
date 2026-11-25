@@ -73,6 +73,14 @@ setColorEnabled(false);
 
 `true` when `process.platform === "win32"`.
 
+### `isMac(): boolean` / `isDarwin(): boolean`
+
+`true` when `process.platform === "darwin"`. `isDarwin` is an alias of `isMac`.
+
+### `getPlatform(): Platform`
+
+`"windows"`, `"linux"`, `"mac"`, or `"unknown"`.
+
 ---
 
 ## Loading
@@ -222,3 +230,4 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `TableOptions`
 - `ToolValidationResult`
 - `LoadingOptions`, `LinearLoadingOptions`
+- `Platform`

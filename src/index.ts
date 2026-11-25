@@ -22,7 +22,14 @@ export {
   warning,
   type OutputOptions,
 } from "./logger.js";
-export { isLinux, isWindows } from "./system.js";
+export {
+  getPlatform,
+  isDarwin,
+  isLinux,
+  isMac,
+  isWindows,
+  type Platform,
+} from "./system.js";
 export {
   linearLoading,
   simpleLoading,

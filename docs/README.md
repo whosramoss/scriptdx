@@ -61,10 +61,12 @@ process.stdout.write(`${color.cyan("Cyan text")}\n`);
 ### System
 
 ```ts
-import { isLinux, isWindows } from "../src/index";
+import { getPlatform, isLinux, isMac, isWindows } from "../src/index";
 
 process.stdout.write(`isLinux(): ${String(isLinux())}\n`);
 process.stdout.write(`isWindows(): ${String(isWindows())}\n`);
+process.stdout.write(`isMac(): ${String(isMac())}\n`);
+process.stdout.write(`platform: ${getPlatform()}\n`);
 ```
 
 ### Loading

@@ -4,7 +4,9 @@ import {
   error,
   hasTool,
   info,
+  getPlatform,
   isLinux,
+  isMac,
   isWindows,
   simpleLoading,
   linearLoading,
@@ -173,6 +175,8 @@ function runSystemExample(): void {
   logTopic("System");
   process.stdout.write(`isLinux(): ${String(isLinux())}\n`);
   process.stdout.write(`isWindows(): ${String(isWindows())}\n`);
+  process.stdout.write(`isMac(): ${String(isMac())}\n`);
+  process.stdout.write(`platform: ${getPlatform()}\n`);
 }
 
 async function runMenuDemo(): Promise<void> {
