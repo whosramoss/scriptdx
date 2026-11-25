@@ -108,6 +108,14 @@ export {
   type BoxStyle,
 } from "./box.js";
 export {
+  printTree,
+  showTree,
+  treeFromObject,
+  treeFromPaths,
+  type TreeNode,
+  type TreeOptions,
+} from "./tree.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
