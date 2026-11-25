@@ -67,6 +67,18 @@ export {
   type TableRow,
 } from "./table.js";
 export {
+  formatBytes,
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  formatRelativeTime,
+  type ByteFormatOptions,
+  type DurationFormatOptions,
+  type NumberFormatOptions,
+  type PercentFormatOptions,
+  type RelativeTimeOptions,
+} from "./format.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
