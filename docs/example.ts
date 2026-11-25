@@ -4,7 +4,9 @@ import {
   error,
   hasTool,
   info,
+  getPlatform,
   isLinux,
+  isMac,
   isWindows,
   simpleLoading,
   linearLoading,
@@ -18,7 +20,6 @@ import {
   logWarning,
   runMenuByIndex,
   runStep,
-  showScriptTitle,
   showTable,
   showTableWithBorders,
   styles,
@@ -26,6 +27,7 @@ import {
   summarizeToolValidation,
   warning,
 } from "../src/index";
+import { showScriptTitle } from "../src/font/index";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -173,6 +175,8 @@ function runSystemExample(): void {
   logTopic("System");
   process.stdout.write(`isLinux(): ${String(isLinux())}\n`);
   process.stdout.write(`isWindows(): ${String(isWindows())}\n`);
+  process.stdout.write(`isMac(): ${String(isMac())}\n`);
+  process.stdout.write(`platform: ${getPlatform()}\n`);
 }
 
 async function runMenuDemo(): Promise<void> {

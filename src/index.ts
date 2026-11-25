@@ -1,11 +1,23 @@
 export {
   color,
   isColorEnabled,
+  modifiers,
   setColorEnabled,
   styles,
   type ColorChain,
   type LoggerColor,
+  type Modifier,
 } from "./colors.js";
+export {
+  center,
+  hasAnsi,
+  padEnd,
+  padStart,
+  stringWidth,
+  stripAnsi,
+  truncate,
+  wrapText,
+} from "./ansi-utils.js";
 export {
   debug,
   error,
@@ -22,7 +34,14 @@ export {
   warning,
   type OutputOptions,
 } from "./logger.js";
-export { isLinux, isWindows } from "./system.js";
+export {
+  getPlatform,
+  isDarwin,
+  isLinux,
+  isMac,
+  isWindows,
+  type Platform,
+} from "./system.js";
 export {
   linearLoading,
   simpleLoading,
@@ -46,4 +65,3 @@ export {
   summarizeToolValidation,
   type ToolValidationResult,
 } from "./validations.js";
-export { showScriptTitle } from "./font/index.js";

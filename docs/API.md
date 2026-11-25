@@ -40,7 +40,12 @@ Record of ANSI SGR codes: `black`, `red`, `green`, `yellow`, `blue`, `purple`, `
 
 ### `color`
 
-Object of chainable color functions: `color.black`, `color.red`, `color.green`, `color.yellow`, `color.blue`, `color.magenta`, `color.cyan`, `color.white`. Each returns a string and exposes `.bold` for bold variant. ANSI sequences are omitted when color is disabled.
+Object of chainable color functions: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, plus `gray` and `brightRed`, `brightGreen`, `brightYellow`, `brightBlue`, `brightMagenta`, `brightCyan`, `brightWhite`. Each returns a string. Modifiers chain in call order: `.bold`, `.dim`, `.italic`, `.underline`, `.strikethrough`, `.inverse`. ANSI sequences are omitted when color is disabled.
+
+```ts
+color.red.bold.underline("error");
+color.brightCyan("ok");
+```
 
 ### `isColorEnabled()` / `setColorEnabled(enabled)`
 
@@ -72,6 +77,14 @@ setColorEnabled(false);
 ### `isWindows(): boolean`
 
 `true` when `process.platform === "win32"`.
+
+### `isMac(): boolean` / `isDarwin(): boolean`
+
+`true` when `process.platform === "darwin"`. `isDarwin` is an alias of `isMac`.
+
+### `getPlatform(): Platform`
+
+`"windows"`, `"linux"`, `"mac"`, or `"unknown"`.
 
 ---
 
@@ -198,9 +211,21 @@ Split a `Record<string, boolean>` into `{ ok: string[], fail: string[] }`.
 
 ---
 
+## ANSI strings
+
+`stripAnsi`, `hasAnsi`, and `stringWidth` ignore escape sequences. `padEnd`, `padStart`, and `center` pad to a visible width and keep existing codes. `truncate` and `wrapText` return plain text. `truncate` appends `"…"` when the visible text is longer than `maxWidth`.
+
+```ts
+stringWidth(color.red("ERROR")); // 5
+padEnd(color.green("OK"), 10);
+truncate("This is a very long message", 15); // "This is a very…"
+```
+
+---
+
 ## Font
 
-Prefer `import { showScriptTitle } from "scriptdx/font"` so the glyph map is not part of the main entry graph. `showScriptTitle` remains available from `scriptdx` for compatibility; the map is allocated on first call either way.
+Import `showScriptTitle` from `scriptdx/font`. The main `scriptdx` entry does not load the glyph module. The map is allocated on the first call.
 
 ### `showScriptTitle(word): string`
 
@@ -211,7 +236,8 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 ## Types exported
 
 - `LoggerColor` — keyof `styles`
-- `ColorChain` — color function with `.bold`
+- `ColorChain` — color function with chainable style modifiers
+- `Modifier` — keyof `modifiers`
 - `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
@@ -222,3 +248,4 @@ Render `word` as large block-letter ASCII art (built-in glyph map). Returns mult
 - `TableOptions`
 - `ToolValidationResult`
 - `LoadingOptions`, `LinearLoadingOptions`
+- `Platform`

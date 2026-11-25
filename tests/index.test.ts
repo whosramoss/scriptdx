@@ -17,7 +17,10 @@ import {
   hasTool,
   info,
   isColorEnabled,
+  getPlatform,
+  isDarwin,
   isLinux,
+  isMac,
   isWindows,
   linearLoading,
   logColor,
@@ -27,7 +30,6 @@ import {
   runStep,
   runStepLegacy,
   setColorEnabled,
-  showScriptTitle,
   showTable,
   showTableWithBorders,
   simpleLoading,
@@ -64,6 +66,10 @@ describe("logger and colors", () => {
   it("color helpers include ANSI sequences", () => {
     expect(color.cyan("x")).toContain("\u001b[36m");
     expect(color.cyan.bold("x")).toContain("\u001b[1;36m");
+    expect(color.red.bold.underline("x")).toContain("\u001b[1;4;31m");
+    expect(color.cyan.italic.dim("x")).toContain("\u001b[3;2;36m");
+    expect(color.brightCyan("x")).toContain("\u001b[96m");
+    expect(color.gray.strikethrough("x")).toContain("\u001b[9;90m");
     expect(styles.lightGreen).toBe("1;32");
   });
 
@@ -71,6 +77,8 @@ describe("logger and colors", () => {
     setColorEnabled(false);
     expect(color.cyan("x")).toBe("x");
     expect(color.cyan.bold("x")).toBe("x");
+    expect(color.red.bold.underline("x")).toBe("x");
+    expect(color.brightGreen("x")).toBe("x");
   });
 
   it("logger aliases write to the given stream", () => {
@@ -229,9 +237,21 @@ describe("getOutputStream", () => {
 });
 
 describe("system", () => {
-  it("isLinux/isWindows reflect current runtime", () => {
+  it("platform helpers reflect the current runtime", () => {
     expect(isLinux()).toBe(process.platform === "linux");
     expect(isWindows()).toBe(process.platform === "win32");
+    expect(isMac()).toBe(process.platform === "darwin");
+    expect(isDarwin()).toBe(isMac());
+
+    const expected =
+      process.platform === "win32"
+        ? "windows"
+        : process.platform === "linux"
+          ? "linux"
+          : process.platform === "darwin"
+            ? "mac"
+            : "unknown";
+    expect(getPlatform()).toBe(expected);
   });
 });
 
@@ -749,14 +769,16 @@ describe("validations", () => {
 });
 
 describe("font", () => {
-  it("showScriptTitle renders multi-line ASCII", () => {
+  it("showScriptTitle renders multi-line ASCII", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("Ab");
     const lines = title.split("\n");
     expect(lines.length).toBe(10);
     expect(title.length).toBeGreaterThan(0);
   });
 
-  it("showScriptTitle fallback for unmapped characters", () => {
+  it("showScriptTitle fallback for unmapped characters", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("@!");
     const lines = title.split("\n");
 
@@ -767,13 +789,18 @@ describe("font", () => {
     }
   });
 
-  it("is available from the font entry module", async () => {
+  it("keeps the glyph map out of the main entry until the first title", async () => {
+    vi.resetModules();
+    const main = await import("../src/index.js");
+    const glyphs = await import("../src/font/glyphs.js");
     const font = await import("../src/font/index.js");
-    expect(font.showScriptTitle("Ab")).toBe(showScriptTitle("Ab"));
-  });
 
-  it("allocates the glyph map once and reuses it", async () => {
-    const { getFontMap } = await import("../src/font/glyphs.js");
-    expect(getFontMap()).toBe(getFontMap());
+    expect(main).not.toHaveProperty("showScriptTitle");
+    expect(glyphs.isFontMapAllocated()).toBe(false);
+
+    font.showScriptTitle("A");
+
+    expect(glyphs.isFontMapAllocated()).toBe(true);
+    expect(glyphs.getFontMap()).toBe(glyphs.getFontMap());
   });
 });
