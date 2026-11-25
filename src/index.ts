@@ -79,6 +79,15 @@ export {
   type RelativeTimeOptions,
 } from "./format.js";
 export {
+  diff,
+  formatDiff,
+  inlineDiff,
+  showDiff,
+  type DiffLine,
+  type DiffOptions,
+  type DiffResult,
+} from "./diff.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
