@@ -98,6 +98,16 @@ export {
 } from "./retry.js";
 export { getSpinnerFrames, spinnerPresets, type SpinnerPreset } from "./spinner-frames.js";
 export {
+  banner,
+  box,
+  callout,
+  printBox,
+  separator,
+  type BoxOptions,
+  type BoxPreset,
+  type BoxStyle,
+} from "./box.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
