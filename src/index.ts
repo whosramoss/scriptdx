@@ -116,6 +116,13 @@ export {
   type TreeOptions,
 } from "./tree.js";
 export {
+  compactJson,
+  highlightJson,
+  parseJsonSafe,
+  printJson,
+  type JsonHighlightOptions,
+} from "./json.js";
+export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
