@@ -9,6 +9,16 @@ export {
   type Modifier,
 } from "./colors.js";
 export {
+  center,
+  hasAnsi,
+  padEnd,
+  padStart,
+  stringWidth,
+  stripAnsi,
+  truncate,
+  wrapText,
+} from "./ansi-utils.js";
+export {
   debug,
   error,
   info,

@@ -211,6 +211,18 @@ Split a `Record<string, boolean>` into `{ ok: string[], fail: string[] }`.
 
 ---
 
+## ANSI strings
+
+`stripAnsi`, `hasAnsi`, and `stringWidth` ignore escape sequences. `padEnd`, `padStart`, and `center` pad to a visible width and keep existing codes. `truncate` and `wrapText` return plain text. `truncate` appends `"…"` when the visible text is longer than `maxWidth`.
+
+```ts
+stringWidth(color.red("ERROR")); // 5
+padEnd(color.green("OK"), 10);
+truncate("This is a very long message", 15); // "This is a very…"
+```
+
+---
+
 ## Font
 
 Import `showScriptTitle` from `scriptdx/font`. The main `scriptdx` entry does not load the glyph module. The map is allocated on the first call.
