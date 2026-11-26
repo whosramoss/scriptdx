@@ -41,11 +41,16 @@ import {
 
 logSection("Deploy", "Example workflow with scriptdx");
 
-await runStep(async () => {
+const result = await runStep(async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
-}, "Building project");
+}, "Building project", { showDuration: true });
 
-logSuccess("Build finished");
+if (!result.ok) {
+  logError("Build failed");
+  process.exitCode = 1;
+} else {
+  logSuccess("Build finished");
+}
 
 const table = showTable(
   ["Service", "Port"],
@@ -57,8 +62,9 @@ const table = showTable(
 process.stdout.write(`${table}\n`);
 
 logWarning("Dry run only");
-logError("Connection refused (example)");
 ```
+
+`runStep` now returns a `StepResult`. Use `runStepLegacy` if you still want a `boolean`.
 
 Run the interactive tutorial from the repo:
 
@@ -66,18 +72,23 @@ Run the interactive tutorial from the repo:
 npm run tutorial
 ```
 
-See **[docs/README.md](https://github.com/whosramoss/scriptdx/blob/main/docs/README.md)** for copy-paste examples per category (logger, loading, menu, table, validations, font, and more).
+See **[docs/README.md](https://github.com/whosramoss/scriptdx/blob/main/docs/README.md)** for copy-paste examples per category, and **[docs/API.md](https://github.com/whosramoss/scriptdx/blob/main/docs/API.md)** for the full reference.
 
 ## Features
 
-| Category        | Highlights                                                               |
-| --------------- | ------------------------------------------------------------------------ |
-| **Logger**      | `logInfo`, `logSuccess`, `logWarning`, `logError`, `logColor`, `color.*` |
-| **Loading**     | `simpleLoading`, `linearLoading` with custom frame strings               |
-| **Step**        | `runStep` — async tasks with spinner and success/failure feedback        |
-| **Spinner**     | `createSpinner` for manual progress control                              |
-| **Table**       | `showTable`, `showTableWithBorders` for aligned terminal tables          |
-| **Menu**        | `runMenuByIndex` for numbered CLI menus                                  |
-| **Validations** | `hasTool`, `summarizeToolValidation` for dependency checks               |
-| **System**      | `isLinux`, `isWindows`                                                   |
-| **Font**        | `showScriptTitle` via `scriptdx/font` — large ASCII banner text           |
+| Category        | Highlights                                                                 |
+| --------------- | -------------------------------------------------------------------------- |
+| **Logger**      | `logInfo`, `logSuccess`, `logWarning`, `logError`, `logColor`, `color.*`   |
+| **Loading**     | `simpleLoading`, `linearLoading` with `AbortSignal`                        |
+| **Step**        | `runStep` returns `StepResult`; timeout, duration, and spinner presets     |
+| **Spinner**     | `createSpinner` with named frames and color                                |
+| **Table**       | `showTable`, truncation, wrapping, `createTableBuilder`                    |
+| **Menu**        | `runMenuByIndex` for numbered CLI menus                                    |
+| **Validations** | `hasTool` checks executables on `PATH`; `summarizeToolValidation`          |
+| **System**      | `isLinux`, `isWindows`, `isMac`, `getPlatform`                             |
+| **Font**        | `showScriptTitle` via `scriptdx/font` — `standard`, `banner`, `slant`      |
+| **Format**      | `formatBytes`, `formatNumber`, `formatDuration`, `formatRelativeTime`      |
+| **Diff**        | `diff`, `formatDiff`, `showDiff`, `inlineDiff`                             |
+| **Retry**       | `retry`, `retryAsync`, `withRetry` with backoff                            |
+| **Layout**      | `box`, `banner`, `callout`, `showTree`, `highlightJson`                    |
+| **Style**       | Gradients, OSC 8 links, and ANSI width helpers                             |

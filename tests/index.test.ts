@@ -1,3 +1,6 @@
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   afterEach,
   beforeEach,
@@ -14,7 +17,10 @@ import {
   hasTool,
   info,
   isColorEnabled,
+  getPlatform,
+  isDarwin,
   isLinux,
+  isMac,
   isWindows,
   linearLoading,
   logColor,
@@ -22,14 +28,15 @@ import {
   logTopic,
   runMenuByIndex,
   runStep,
+  runStepLegacy,
   setColorEnabled,
-  showScriptTitle,
   showTable,
   showTableWithBorders,
   simpleLoading,
   styles,
   success,
   summarizeToolValidation,
+  TimeoutError,
   warning,
 } from "../src/index.js";
 import { getOutputStream } from "../src/output.js";
@@ -59,6 +66,10 @@ describe("logger and colors", () => {
   it("color helpers include ANSI sequences", () => {
     expect(color.cyan("x")).toContain("\u001b[36m");
     expect(color.cyan.bold("x")).toContain("\u001b[1;36m");
+    expect(color.red.bold.underline("x")).toContain("\u001b[1;4;31m");
+    expect(color.cyan.italic.dim("x")).toContain("\u001b[3;2;36m");
+    expect(color.brightCyan("x")).toContain("\u001b[96m");
+    expect(color.gray.strikethrough("x")).toContain("\u001b[9;90m");
     expect(styles.lightGreen).toBe("1;32");
   });
 
@@ -66,6 +77,8 @@ describe("logger and colors", () => {
     setColorEnabled(false);
     expect(color.cyan("x")).toBe("x");
     expect(color.cyan.bold("x")).toBe("x");
+    expect(color.red.bold.underline("x")).toBe("x");
+    expect(color.brightGreen("x")).toBe("x");
   });
 
   it("logger aliases write to the given stream", () => {
@@ -224,26 +237,38 @@ describe("getOutputStream", () => {
 });
 
 describe("system", () => {
-  it("isLinux/isWindows reflect current runtime", () => {
+  it("platform helpers reflect the current runtime", () => {
     expect(isLinux()).toBe(process.platform === "linux");
     expect(isWindows()).toBe(process.platform === "win32");
+    expect(isMac()).toBe(process.platform === "darwin");
+    expect(isDarwin()).toBe(isMac());
+
+    const expected =
+      process.platform === "win32"
+        ? "windows"
+        : process.platform === "linux"
+          ? "linux"
+          : process.platform === "darwin"
+            ? "mac"
+            : "unknown";
+    expect(getPlatform()).toBe(expected);
   });
 });
 
 describe("loading", () => {
-  it("simpleLoading writes spinner frames and newline", async () => {
+  it("simpleLoading writes spinner frames and clears the line", async () => {
     const chunks: string[] = [];
 
     await simpleLoading(1, 0, { stream: mockStream(chunks) });
 
     const output = chunks.join("");
-    expect(output).toContain("\n");
     expect(["|", "/", "-", "\\"].some((frame) => output.includes(frame))).toBe(
       true,
     );
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
   });
 
-  it("linearLoading rotates full text and ends line", async () => {
+  it("linearLoading rotates full text and clears the line", async () => {
     const chunks: string[] = [];
 
     await linearLoading("abc", 1, 0, { stream: mockStream(chunks) });
@@ -252,7 +277,60 @@ describe("loading", () => {
     expect(output).toContain("abc");
     expect(output).toContain("bca");
     expect(output).toContain("cab");
-    expect(output.endsWith("\n")).toBe(true);
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
+  });
+
+  it("accepts loading options and stops when the signal aborts", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+    const controller = new AbortController();
+
+    try {
+      const pending = simpleLoading({
+        repeat: 0,
+        delayMs: 20,
+        signal: controller.signal,
+        stream: mockStream(chunks),
+      });
+
+      await vi.advanceTimersByTimeAsync(40);
+      expect(chunks.length).toBeGreaterThan(0);
+
+      controller.abort();
+      await pending;
+
+      expect(chunks.at(-1)).toBe("\r\x1b[K");
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it("resolves immediately when the signal is already aborted", async () => {
+    const chunks: string[] = [];
+    const controller = new AbortController();
+    controller.abort();
+
+    await simpleLoading(0, 50, {
+      signal: controller.signal,
+      stream: mockStream(chunks),
+    });
+
+    expect(chunks).toEqual(["\r\x1b[K"]);
+  });
+
+  it("linearLoading accepts text inside the options object", async () => {
+    const chunks: string[] = [];
+
+    await linearLoading({
+      text: "abc",
+      repeat: 1,
+      delayMs: 0,
+      stream: mockStream(chunks),
+    });
+
+    expect(chunks.join("")).toContain("bca");
+    expect(chunks.at(-1)).toBe("\r\x1b[K");
   });
 
   it("simpleLoading rejects negative delayMs", async () => {
@@ -340,26 +418,163 @@ describe("menu and step", () => {
     expect(chunks.join("")).toContain("Invalid menu index");
   });
 
-  it("runStep returns true when task succeeds", async () => {
+  it("runStep returns ok when task succeeds", async () => {
     const chunks: string[] = [];
 
     const result = await runStep(async () => Promise.resolve(), "step ok", {
       stream: mockStream(chunks),
     });
-    expect(result).toBe(true);
-    expect(chunks.join("")).toContain("step ok");
+    expect(result.ok).toBe(true);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    const output = chunks.join("");
+    expect(output).toContain("step ok");
+    expect(output).not.toMatch(/step ok \(/);
   });
 
-  it("runStep returns false when task fails", async () => {
+  it("runStep returns the thrown value when task fails", async () => {
     const chunks: string[] = [];
+    const failure = new Error("fail");
 
     const result = await runStep(
-      async () => Promise.reject(new Error("fail")),
+      async () => Promise.reject(failure),
       "step fail",
       { stream: mockStream(chunks) },
     );
-    expect(result).toBe(false);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe(failure);
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(chunks.join("")).toContain("step fail");
+  });
+
+  it("runStep returns TimeoutError when the task exceeds timeoutMs", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+
+    try {
+      const pending = runStep(() => new Promise(() => undefined), "slow step", {
+        timeoutMs: 1000,
+        stream: mockStream(chunks),
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+      const result = await pending;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(TimeoutError);
+        expect(result.error).toMatchObject({
+          message: "slow step (timed out after 1000ms)",
+          timeoutMs: 1000,
+        });
+      }
+      expect(chunks.join("")).toContain("slow step (timed out after 1000ms)");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("runStep uses timeoutMessage and ignores a later task rejection", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+    let rejectTask: (error: unknown) => void = () => undefined;
+
+    try {
+      const pending = runStep(
+        () =>
+          new Promise<void>((_, reject) => {
+            rejectTask = reject;
+          }),
+        "deploy",
+        {
+          timeoutMs: 30,
+          timeoutMessage: "Deploy timed out - check network connection",
+          stream: mockStream(chunks),
+        },
+      );
+      await vi.advanceTimersByTimeAsync(30);
+      const result = await pending;
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toMatchObject({
+          message: "Deploy timed out - check network connection",
+        });
+      }
+      rejectTask(new Error("late"));
+      await Promise.resolve();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    [250, "250ms"],
+    [3200, "3.2s"],
+    [135000, "2m 15s"],
+  ] as const)(
+    "runStep shows %ims as %s when showDuration is set",
+    async (delayMs, formatted) => {
+      vi.useFakeTimers();
+      const chunks: string[] = [];
+
+      try {
+        const pending = runStep(
+          () => new Promise((resolve) => setTimeout(resolve, delayMs)),
+          "Building",
+          { showDuration: true, stream: mockStream(chunks) },
+        );
+        await vi.advanceTimersByTimeAsync(delayMs);
+        const result = await pending;
+
+        expect(result.durationMs).toBe(delayMs);
+        expect(chunks.join("")).toContain(`Building (${formatted})`);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("runStep keeps the timeout warning when showDuration is set", async () => {
+    vi.useFakeTimers();
+    const chunks: string[] = [];
+
+    try {
+      const pending = runStep(() => new Promise(() => undefined), "Processing", {
+        timeoutMs: 10000,
+        showDuration: true,
+        stream: mockStream(chunks),
+      });
+      await vi.advanceTimersByTimeAsync(10000);
+      const result = await pending;
+
+      expect(result.ok).toBe(false);
+      expect(result.durationMs).toBe(10000);
+      const output = chunks.join("");
+      expect(output).toContain("Processing (timed out after 10000ms)");
+      expect(output).not.toContain("Processing (10.0s)");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("runStep rejects a negative timeoutMs", async () => {
+    await expect(
+      runStep(async () => Promise.resolve(), "step", { timeoutMs: -1 }),
+    ).rejects.toThrow(RangeError);
+  });
+
+  it("runStepLegacy returns a boolean", async () => {
+    const chunks: string[] = [];
+    const stream = mockStream(chunks);
+
+    await expect(
+      runStepLegacy(async () => Promise.resolve(), "legacy ok", { stream }),
+    ).resolves.toBe(true);
+    await expect(
+      runStepLegacy(async () => Promise.reject(new Error("x")), "legacy fail", {
+        stream,
+      }),
+    ).resolves.toBe(false);
   });
 });
 
@@ -496,20 +711,74 @@ describe("validations", () => {
     expect(summary.fail).toEqual(["docker"]);
   });
 
-  it("hasTool returns false for empty tool name", () => {
+  it("returns true for installed tools", () => {
+    expect(hasTool("node")).toBe(true);
+  });
+
+  it("returns false for non-existent tools", () => {
+    expect(hasTool("definitely-not-a-real-tool-12345")).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
     expect(hasTool("")).toBe(false);
+    expect(hasTool("   ")).toBe(false);
+  });
+
+  it("rejects paths and parent segments", () => {
+    expect(hasTool("/usr/bin/node")).toBe(false);
+    expect(hasTool("./node")).toBe(false);
+    expect(hasTool("..")).toBe(false);
+    expect(hasTool(".")).toBe(false);
+  });
+
+  it("resolves an executable placed on PATH and ignores directories", () => {
+    const dir = mkdtempSync(join(tmpdir(), "scriptdx-hastool-"));
+
+    try {
+      const fileName = process.platform === "win32" ? "scriptdx-fixture.cmd" : "scriptdx-fixture";
+      const filePath = join(dir, fileName);
+      writeFileSync(filePath, process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n");
+      if (process.platform !== "win32") chmodSync(filePath, 0o755);
+      mkdirSync(join(dir, "scriptdx-directory"));
+      process.env.PATH = dir;
+
+      expect(hasTool("scriptdx-fixture")).toBe(true);
+      expect(hasTool("scriptdx-directory")).toBe(false);
+      expect(hasTool("scriptdx-missing")).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(process.platform !== "win32")("finds Windows executables by extension", () => {
+    const dir = mkdtempSync(join(tmpdir(), "scriptdx-hastool-win-"));
+
+    try {
+      process.env.PATH = dir;
+
+      for (const ext of [".exe", ".cmd", ".bat", ".ps1"]) {
+        const base = `scriptdx-fixture-${ext.slice(1)}`;
+        writeFileSync(join(dir, base + ext), "");
+        expect(hasTool(base)).toBe(true);
+        expect(hasTool(base + ext)).toBe(true);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
 describe("font", () => {
-  it("showScriptTitle renders multi-line ASCII", () => {
+  it("showScriptTitle renders multi-line ASCII", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("Ab");
     const lines = title.split("\n");
     expect(lines.length).toBe(10);
     expect(title.length).toBeGreaterThan(0);
   });
 
-  it("showScriptTitle fallback for unmapped characters", () => {
+  it("showScriptTitle fallback for unmapped characters", async () => {
+    const { showScriptTitle } = await import("../src/font/index.js");
     const title = showScriptTitle("@!");
     const lines = title.split("\n");
 
@@ -520,13 +789,18 @@ describe("font", () => {
     }
   });
 
-  it("is available from the font entry module", async () => {
+  it("keeps the glyph map out of the main entry until the first title", async () => {
+    vi.resetModules();
+    const main = await import("../src/index.js");
+    const glyphs = await import("../src/font/glyphs.js");
     const font = await import("../src/font/index.js");
-    expect(font.showScriptTitle("Ab")).toBe(showScriptTitle("Ab"));
-  });
 
-  it("allocates the glyph map once and reuses it", async () => {
-    const { getFontMap } = await import("../src/font/glyphs.js");
-    expect(getFontMap()).toBe(getFontMap());
+    expect(main).not.toHaveProperty("showScriptTitle");
+    expect(glyphs.isFontMapAllocated()).toBe(false);
+
+    font.showScriptTitle("A");
+
+    expect(glyphs.isFontMapAllocated()).toBe(true);
+    expect(glyphs.getFontMap()).toBe(glyphs.getFontMap());
   });
 });

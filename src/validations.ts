@@ -1,3 +1,6 @@
+import { accessSync, constants, statSync } from "node:fs";
+import { basename, join } from "node:path";
+
 /** Result of splitting tool checks into passing and failing names. */
 export type ToolValidationResult = {
   /** Tool names that passed validation. */
@@ -6,25 +9,53 @@ export type ToolValidationResult = {
   fail: string[];
 };
 
+const WINDOWS_EXECUTABLE_EXTENSIONS = [".exe", ".cmd", ".bat", ".ps1", ""] as const;
+const POSIX_EXECUTABLE_EXTENSIONS = [""] as const;
+
+function isBareToolName(toolName: string): boolean {
+  return toolName !== "." && toolName !== ".." && basename(toolName) === toolName;
+}
+
+function isExecutableFile(candidate: string): boolean {
+  try {
+    accessSync(candidate, constants.X_OK);
+    return statSync(candidate).isFile();
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Heuristic check that `toolName` is non-empty and `PATH` has directories.
- * Does not execute or locate the binary on disk.
+ * Check whether `toolName` is an executable file on `PATH`.
+ * Does not run the binary. Absolute paths, relative paths, `.`, and `..` are rejected.
+ * On Windows, `.exe`, `.cmd`, `.bat`, and `.ps1` are searched in that order, then the bare name.
  *
- * @param toolName - CLI tool name to validate
- * @returns `true` when `toolName` is non-empty and `PATH` has at least one directory
+ * @param toolName - Bare CLI tool name to locate
+ * @returns `true` when an executable file with that name exists on `PATH`
  *
  * @example
  * ```ts
  * if (hasTool("git")) {
- *   // PATH looks usable and name is non-empty
+ *   // git is installed and executable
  * }
  * ```
  */
 export function hasTool(toolName: string): boolean {
+  if (!toolName.trim() || !isBareToolName(toolName)) return false;
+
   const pathVar = process.env.PATH ?? "";
   const separator = process.platform === "win32" ? ";" : ":";
+  const extensions =
+    process.platform === "win32" ? WINDOWS_EXECUTABLE_EXTENSIONS : POSIX_EXECUTABLE_EXTENSIONS;
   const dirs = pathVar.split(separator).filter(Boolean);
-  return dirs.length > 0 && toolName.trim().length > 0;
+
+  for (const dir of dirs) {
+    for (const ext of extensions) {
+      if (isExecutableFile(join(dir, toolName + ext))) return true;
+    }
+  }
+
+  return false;
 }
 
 /**

@@ -1,11 +1,23 @@
 export {
   color,
   isColorEnabled,
+  modifiers,
   setColorEnabled,
   styles,
   type ColorChain,
   type LoggerColor,
+  type Modifier,
 } from "./colors.js";
+export {
+  center,
+  hasAnsi,
+  padEnd,
+  padStart,
+  stringWidth,
+  stripAnsi,
+  truncate,
+  wrapText,
+} from "./ansi-utils.js";
 export {
   debug,
   error,
@@ -22,19 +34,117 @@ export {
   warning,
   type OutputOptions,
 } from "./logger.js";
-export { isLinux, isWindows } from "./system.js";
-export { linearLoading, simpleLoading } from "./loading.js";
+export {
+  getPlatform,
+  isDarwin,
+  isLinux,
+  isMac,
+  isWindows,
+  type Platform,
+} from "./system.js";
+export {
+  linearLoading,
+  simpleLoading,
+  type LinearLoadingOptions,
+  type LoadingOptions,
+} from "./loading.js";
 export {
   createSpinner,
   runStep,
+  runStepLegacy,
+  TimeoutError,
+  type RunStepOptions,
   type Spinner,
   type SpinnerOptions,
+  type StepResult,
 } from "./spinner.js";
 export { runMenuByIndex, type MenuItem } from "./menu.js";
-export { showTable, showTableWithBorders, type TableOptions, type TableRow } from "./table.js";
+export {
+  createTableBuilder,
+  showTable,
+  showTableWithBorders,
+  type TableOptions,
+  type TableRow,
+} from "./table.js";
+export {
+  formatBytes,
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  formatRelativeTime,
+  type ByteFormatOptions,
+  type DurationFormatOptions,
+  type NumberFormatOptions,
+  type PercentFormatOptions,
+  type RelativeTimeOptions,
+} from "./format.js";
+export {
+  diff,
+  formatDiff,
+  inlineDiff,
+  showDiff,
+  type DiffLine,
+  type DiffOptions,
+  type DiffResult,
+} from "./diff.js";
+export {
+  retry,
+  retryAsync,
+  retryFixed,
+  retryLinear,
+  withRetry,
+  type RetryOptions,
+  type RetryResult,
+} from "./retry.js";
+export { getSpinnerFrames, spinnerPresets, type SpinnerPreset } from "./spinner-frames.js";
+export {
+  banner,
+  box,
+  callout,
+  printBox,
+  separator,
+  type BoxOptions,
+  type BoxPreset,
+  type BoxStyle,
+} from "./box.js";
+export {
+  printTree,
+  showTree,
+  treeFromObject,
+  treeFromPaths,
+  type TreeNode,
+  type TreeOptions,
+} from "./tree.js";
+export {
+  compactJson,
+  highlightJson,
+  parseJsonSafe,
+  printJson,
+  type JsonHighlightOptions,
+} from "./json.js";
+export {
+  animateGradient,
+  applyGradient,
+  gradient,
+  gradientBanner,
+  gradientPresets,
+  type GradientColor,
+  type GradientOptions,
+  type GradientPreset,
+} from "./gradient.js";
+export {
+  breadcrumb,
+  fileLink,
+  link,
+  linkList,
+  linkify,
+  mailto,
+  printLink,
+  supportsHyperlinks,
+  type LinkOptions,
+} from "./link.js";
 export {
   hasTool,
   summarizeToolValidation,
   type ToolValidationResult,
 } from "./validations.js";
-export { showScriptTitle } from "./font/index.js";

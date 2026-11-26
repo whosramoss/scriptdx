@@ -23,7 +23,7 @@ npm test
 npm run tutorial
 ```
 
-Runs `docs/example.ts` — a terminal menu with one scenario per feature category.
+Runs `docs/example.ts` — a terminal menu over the scenarios in `docs/scenarios.ts`.
 
 ### Demo site (`www/`)
 
