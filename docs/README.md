@@ -1,6 +1,6 @@
 # scriptdx Example Scenarios
 
-This document explains each category with copy-paste examples based on `docs/example.ts`.
+This document explains each category with copy-paste examples based on `docs/example.ts` and `docs/scenarios.ts`.
 
 ## How To Run
 
@@ -55,6 +55,7 @@ debug("Alias: debug");
 logTopic("Color Object");
 process.stdout.write(`${color.green("Plain green text")}\n`);
 process.stdout.write(`${color.red.bold("Bold red text")}\n`);
+process.stdout.write(`${color.red.bold.underline("Bold underlined red")}\n`);
 process.stdout.write(`${color.cyan("Cyan text")}\n`);
 ```
 
@@ -78,9 +79,9 @@ await simpleLoading(8, 35);
 
 await linearLoading("▁▂▃▅▆▇▇▆▅▃▂▁", 4, 35);
 await linearLoading("░▒▓█▓▒░░▒▓█▓▒░", 4, 35);
-await linearLoading("[=] [=] [=] [=] ", 4, 35);
-await linearLoading(" > > > > >", 4, 35);
-await linearLoading("# # # # # # ", 4, 35);
+
+const controller = new AbortController();
+await simpleLoading({ repeat: 0, signal: controller.signal });
 ```
 
 ### Menu
@@ -101,25 +102,25 @@ await runMenuByIndex(menuItems, 0);
 ```ts
 import { runStep } from "../src/index";
 
-await runStep(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-}, "1. Waiting before creating a resource");
+const result = await runStep(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 800));
+}, "Building project", { showDuration: true });
 
-await runStep(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-}, "2. Creating the resource");
+if (!result.ok) {
+  throw result.error;
+}
 
-await runStep(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-}, "3. Deleting the resource");
+process.stdout.write(`durationMs: ${String(result.durationMs)}\n`);
 ```
+
+`runStep` returns a `StepResult`. Use `runStepLegacy` if you still need a `boolean`.
 
 ### Spinner (backward-compatible)
 
 ```ts
 import { createSpinner } from "../src/index";
 
-const spinner = createSpinner({ intervalMs: 80 });
+const spinner = createSpinner({ intervalMs: 80, frames: "arrow" });
 spinner.start("Manual spinner in progress");
 await new Promise((resolve) => setTimeout(resolve, 300));
 spinner.stop("Manual spinner finished");
@@ -140,6 +141,7 @@ const rows = [
 
 process.stdout.write(`${showTable(header, rows)}\n`);
 process.stdout.write(`${showTableWithBorders(header, rows)}\n`);
+process.stdout.write(`${showTable(header, rows, { maxWidth: 18, maxRows: 2 })}\n`);
 ```
 
 ### Validations
@@ -169,10 +171,69 @@ process.stdout.write(`${color.green("ok")}: ${summary.ok.join(", ")}\n`);
 process.stdout.write(`${color.red("fail")}: ${summary.fail.join(", ")}\n`);
 ```
 
+`hasTool` now requires a bare executable name that exists on `PATH`.
+
 ### Font
 
 ```ts
 import { showScriptTitle } from "../src/font/index";
 
 process.stdout.write(`${showScriptTitle("SCRIPTDX")}\n`);
+process.stdout.write(`${showScriptTitle("DX", { font: "banner", border: true })}\n`);
+```
+
+### Format & ANSI
+
+```ts
+import { color, formatBytes, formatDuration, formatNumber, stringWidth, truncate } from "../src/index";
+
+process.stdout.write(`${formatBytes(1536)}\n`);
+process.stdout.write(`${formatNumber(1_234_567)}\n`);
+process.stdout.write(`${formatDuration(90_000, { compact: true })}\n`);
+process.stdout.write(`${String(stringWidth(color.red("ERROR")))}\n`);
+process.stdout.write(`${truncate("This is a very long message", 15)}\n`);
+```
+
+### Diff & Retry
+
+```ts
+import { retry, showDiff } from "../src/index";
+
+showDiff("hello\nworld\n", "hello\nthere\n");
+
+let attempts = 0;
+const result = await retry(
+  () => {
+    attempts += 1;
+    if (attempts < 2) return Promise.reject(new Error("transient failure"));
+    return Promise.resolve("ready");
+  },
+  { maxAttempts: 3, initialDelay: 40, jitter: false, log: false },
+);
+
+if (result.ok) {
+  process.stdout.write(`retry succeeded after ${String(result.attempts)} attempt(s)\n`);
+}
+```
+
+### Box, Tree & JSON
+
+```ts
+import { box, callout, highlightJson, showTree, treeFromPaths } from "../src/index";
+
+process.stdout.write(`${box("Deploy complete", { preset: "success", title: "Status" })}\n`);
+process.stdout.write(`${callout("Check logs before shipping", "warning")}\n`);
+process.stdout.write(`${showTree(treeFromPaths(["src/index.ts", "docs/API.md"]))}\n`);
+process.stdout.write(`${highlightJson({ name: "scriptdx", version: "2.0.0" })}\n`);
+```
+
+### Gradient & Links
+
+```ts
+import { applyGradient, link } from "../src/index";
+
+process.stdout.write(`${applyGradient("scriptdx", "ocean")}\n`);
+process.stdout.write(
+  `${link("API docs", "https://github.com/whosramoss/scriptdx/blob/main/docs/API.md")}\n`,
+);
 ```

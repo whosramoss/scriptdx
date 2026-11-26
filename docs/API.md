@@ -142,7 +142,7 @@ Run the menu item at `selectedIndex`. Logs a warning if the index is invalid. Op
 
 Run async `task` while showing a Braille spinner on **stderr**. On success: clears the line, calls `logSuccess(message)`, and returns `{ ok: true, durationMs }`. On failure: calls `logError(message)` and returns `{ ok: false, error, durationMs }` with the thrown value. A timeout calls `logWarning` and sets `error` to `TimeoutError`. When `options.stream` is set, both the spinner and the final log write to that stream.
 
-**Options:** `timeoutMs` (omit or `0` for no timeout), `timeoutMessage`, `showDuration` (default `false`), `stream`.
+**Options:** `timeoutMs` (omit or `0` for no timeout), `timeoutMessage`, `showDuration` (default `false`), `spinnerFrames`, `spinnerColor`, `stream`.
 
 `durationMs` is always present on the result. With `showDuration: true`, the success line becomes `✔ Building (3.2s)`. The label uses `250ms` under one second, `3.2s` under one minute, and `2m 15s` after that. A timeout still logs the timeout warning.
 
@@ -166,7 +166,7 @@ type StepResult =
 
 Manual spinner control.
 
-**Options:** `intervalMs` (default `80`), `stream` (default `process.stderr`).
+**Options:** `intervalMs` (default `80`), `frames` (preset name or custom array, default `"dots"`), `color`, `stream` (default `process.stderr`).
 
 **Spinner methods:**
 
@@ -291,15 +291,16 @@ Prints `showScriptTitle` to stdout.
 - `OutputOptions` — `{ stream?: NodeJS.WritableStream }`
 - `MenuItem`
 - `Spinner`, `SpinnerOptions`
+- `SpinnerPreset`
 - `StepResult`
 - `RunStepOptions`
 - `TimeoutError`
+- `FontName`, `TitleOptions` — from `scriptdx/font`
 - `TableRow`
 - `TableOptions`
 - `ByteFormatOptions`, `NumberFormatOptions`, `DurationFormatOptions`, `PercentFormatOptions`, `RelativeTimeOptions`
 - `DiffLine`, `DiffResult`, `DiffOptions`
 - `RetryOptions`, `RetryResult`
-- `SpinnerPreset`
 - `BoxStyle`, `BoxPreset`, `BoxOptions`
 - `TreeNode`, `TreeOptions`
 - `JsonHighlightOptions`
