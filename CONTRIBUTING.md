@@ -42,8 +42,10 @@ The `www/` folder is a static demo for [scriptdx.whosramoss.com](https://scriptd
 Before opening a PR, run:
 
 ```bash
-npm run build && npm run typecheck && npm run lint && npm test
+npm run validate && npm run build
 ```
+
+GitHub Actions runs `validate` and `build` on every pull request (feature → `release/**` and `release/**` → `main`) and on pushes to those branches. Merge is blocked until the **validate** check is green. The workflow does not publish to npm.
 
 ## Branch and pull requests
 
@@ -51,7 +53,7 @@ npm run build && npm run typecheck && npm run lint && npm test
 2. Keep changes focused — one logical change per PR when possible.
 3. Update tests when behavior changes.
 4. Update [CHANGELOG.md](./CHANGELOG.md) under `[Unreleased]` for user-visible changes (English, Keep a Changelog categories).
-5. Open a PR against `main` with a clear description and steps to verify.
+5. Open a PR into `release/**` or `main`. Wait for **validate** to pass before merging.
 
 ## Commit messages
 
